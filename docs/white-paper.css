@@ -1,0 +1,21 @@
+@page { size: A4; margin: 18mm 18mm 16mm; }
+body { font: 10pt/1.42 "Noto Sans", "Helvetica Neue", Arial, sans-serif; color: #1a1a1a; max-width: none; margin: 0; }
+header#title-block-header { height: 250mm; display: flex; flex-direction: column; justify-content: center; page-break-after: always; }
+header .title { font-size: 28pt; line-height: 1.15; margin: 0 0 12px; color: #1c5cab; }
+header .subtitle { font-size: 14pt; margin: 0 0 40px; color: #52514e; font-weight: normal; }
+header .author, header .date { margin: 4px 0; font-size: 11pt; }
+nav#TOC { page-break-after: always; }
+nav#TOC ul { list-style: none; padding-left: 14px; }
+h1 { font-size: 15pt; color: #1c5cab; margin: 16px 0 6px; page-break-after: avoid; }
+h2 { font-size: 11.5pt; margin: 12px 0 4px; page-break-after: avoid; }
+p, li { margin: 4px 0; }
+ul, ol { padding-left: 20px; margin: 4px 0; }
+blockquote { margin: 8px 0; padding: 6px 12px; border-left: 3px solid #2a78d6; background: #f3f7fd; }
+table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 8.6pt; }
+tr { page-break-inside: avoid; }
+th, td { border-bottom: 1px solid #dddcd6; padding: 3px 5px; text-align: left; vertical-align: top; }
+th { background: #f1f0ec; }
+figure { margin: 8px 0; text-align: center; page-break-inside: avoid; }
+figure img { max-width: 100%; max-height: 62mm; }
+figcaption { font-size: 8.5pt; color: #52514e; }
+code { font-size: 8.8pt; }

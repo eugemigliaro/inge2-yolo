@@ -1,0 +1,24 @@
+sequenceDiagram
+  autonumber
+  actor A as Alumno
+  participant W as web (/api/eventos)
+  participant K as Kafka · juego.eventos
+  participant P as proyector
+  participant L as alertas
+  participant DB as Postgres
+  actor T as Tutor
+  A->>W: completa el nivel 3 de Derecho {eventId, tipo, área, nivel}
+  W->>W: valida sesión y contenido, agrega área, total de niveles y hora
+  W->>K: produce (clave = id del alumno)
+  W-->>A: 202 Accepted
+  par cada grupo recibe el evento
+    K->>P: evento
+    P->>DB: BEGIN · registra eventId (descarta si ya estaba) · suma tiempo y nivel · COMMIT
+  and
+    K->>L: evento
+    L->>L: ¿completó el último nivel?
+    L->>DB: guarda la alerta «descubrió un interés»
+    L->>T: email al tutor
+  end
+  T->>W: dashboard (se actualiza cada 5 s)
+  W->>DB: lee el recorrido de sus alumnos

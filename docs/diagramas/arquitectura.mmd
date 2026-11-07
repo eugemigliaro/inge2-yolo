@@ -1,0 +1,21 @@
+flowchart LR
+  alumno(["Alumno<br/>(navegador)"])
+  tutor(["Tutor<br/>(navegador)"])
+  subgraph web["web · Next.js"]
+    juego["Juegos por área"]
+    ingesta["POST /api/eventos<br/>valida · enriquece"]
+    dash["Dashboard del tutor"]
+  end
+  subgraph kafka["Kafka (KRaft)"]
+    topico[["juego.eventos<br/>3 particiones · clave = alumno<br/>retención infinita"]]
+  end
+  proyector["proyector<br/>grupo dashboard-proyector<br/>tiempo efectivo · sesiones · profundidad"]
+  alertas["alertas<br/>grupo alertas-tutor<br/>interés · frustración"]
+  pg[("Postgres<br/>modelo de lectura")]
+  mail["Mailpit<br/>(SMTP simulado)"]
+
+  alumno --> juego --> ingesta -- "produce" --> topico
+  topico -- "consume" --> proyector -- "upsert idempotente" --> pg
+  topico -- "consume" --> alertas -- "alerta" --> pg
+  alertas -- "email" --> mail
+  tutor --> dash -- "lee" --> pg

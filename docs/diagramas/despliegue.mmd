@@ -1,0 +1,13 @@
+flowchart LR
+  internet(["Internet"]) -- "HTTPS 443" --> caddy
+  dev(["Equipo<br/>(SSH 22)"]) -. "túnel SSH" .-> ui
+  subgraph az["Azure · VM Standard_B2s (Ubuntu 24.04) · NSG: 22, 80, 443"]
+    subgraph dc["docker compose"]
+      caddy["Caddy<br/>TLS Let's Encrypt"] --> web["web"]
+      web --> kafka["kafka"]
+      kafka --> proyector["proyector"] & alertas["alertas"]
+      web & proyector & alertas --> pg[("postgres")]
+      alertas --> mail["mailpit"]
+      ui["kafka-ui · mailpit<br/>solo 127.0.0.1"]
+    end
+  end

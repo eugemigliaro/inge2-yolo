@@ -1,0 +1,21 @@
+# Se suma al docker-compose.yml en la VM: HTTPS con Caddy y solo los puertos 80/443 expuestos.
+# Kafka UI y Mailpit quedan accesibles solo por túnel SSH (ver README).
+services:
+  caddy:
+    image: caddy:2.11-alpine
+    command: caddy reverse-proxy --from ${DOMINIO} --to web:3000
+    ports: ["80:80", "443:443"]
+    volumes: [caddy:/data]
+    depends_on: [web]
+    restart: unless-stopped
+  web:
+    environment:
+      COOKIE_SECURE: "true"
+    ports: !override ["127.0.0.1:3000:3000"]
+  mailpit:
+    ports: !override ["127.0.0.1:8025:8025"]
+  kafka-ui:
+    ports: !override ["127.0.0.1:8080:8080"]
+
+volumes:
+  caddy:
