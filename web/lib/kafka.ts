@@ -6,6 +6,12 @@ const kafka = new kafkaPkg.KafkaJS.Kafka({ kafkaJS: { brokers: (process.env.KAFK
 let conectado: Promise<kafkaPkg.KafkaJS.Producer> | undefined;
 
 // Un solo productor por proceso. Idempotente: un reintento interno del cliente no duplica el mensaje en el log.
+export async function publicar(eventos: { alumnoId: string }[]) {
+  if (eventos.length === 0) return;
+  const p = await productor();
+  await p.send({ topic: TOPICO, messages: eventos.map((e) => ({ key: e.alumnoId, value: JSON.stringify(e) })) });
+}
+
 export function productor() {
   conectado ??= (async () => {
     const p = kafka.producer({ kafkaJS: { idempotent: true } });

@@ -1,7 +1,7 @@
 // Consumidor "proyector": convierte el flujo de eventos en el modelo de lectura del dashboard.
 // Cada evento se aplica en una transacción junto con su id, así un reenvío o un reproceso no duplica nada.
 import { consumir, db, type EventoJuego } from './comun.ts';
-import { dia, siguienteEstado, tiempoEfectivo, type Estado } from './reglas.ts';
+import { deltaRecorrido, dia, type Estado } from './reglas.ts';
 
 async function proyectar(ev: EventoJuego) {
   const cx = await db.connect();
@@ -14,42 +14,39 @@ async function proyectar(ev: EventoJuego) {
     const prev: Estado | undefined = rows[0] && {
       ultimoTs: Number(rows[0].ultimo_ts), ultimoTipo: rows[0].ultimo_tipo, ultimaArea: rows[0].ultima_area, sesiones: rows[0].sesiones,
     };
+    const d = deltaRecorrido(prev, ev);
 
-    const t = tiempoEfectivo(prev, ev.ts);
-    if (t) {
+    if (d.tiempo) {
       await cx.query(
         `insert into progreso_area (alumno_id, area, tiempo_ms) values ($1, $2, $3)
          on conflict (alumno_id, area) do update set tiempo_ms = progreso_area.tiempo_ms + $3`,
-        [ev.alumnoId, t.area, t.ms]);
+        [ev.alumnoId, d.tiempo.area, d.tiempo.ms]);
       await cx.query(
         `insert into actividad_diaria (alumno_id, dia, area, tiempo_ms) values ($1, $2, $3, $4)
          on conflict (alumno_id, dia, area) do update set tiempo_ms = actividad_diaria.tiempo_ms + $4`,
-        [ev.alumnoId, dia(ev.ts), t.area, t.ms]);
+        [ev.alumnoId, dia(ev.ts), d.tiempo.area, d.tiempo.ms]);
     }
 
-    const es = (tipo: EventoJuego['tipo']) => (ev.tipo === tipo ? 1 : 0);
     await cx.query(
-      `insert into progreso_area (alumno_id, area, decisiones, aciertos, completados, abandonos, nivel_max, ultima_actividad)
+      `insert into progreso_area (alumno_id, area, intentos, aciertos, completados, abandonos, nivel_max, ultima_actividad)
        values ($1, $2, $3, $4, $5, $6, $7, to_timestamp($8 / 1000.0))
        on conflict (alumno_id, area) do update set
-         decisiones = progreso_area.decisiones + excluded.decisiones,
+         intentos = progreso_area.intentos + excluded.intentos,
          aciertos = progreso_area.aciertos + excluded.aciertos,
          completados = progreso_area.completados + excluded.completados,
          abandonos = progreso_area.abandonos + excluded.abandonos,
          nivel_max = greatest(progreso_area.nivel_max, excluded.nivel_max),
          ultima_actividad = greatest(progreso_area.ultima_actividad, excluded.ultima_actividad)`,
-      [ev.alumnoId, ev.area, es('decision'), ev.correcta ? 1 : 0, es('nivel_completado'), es('nivel_abandonado'),
-        es('nivel_completado') * ev.nivel, ev.ts]);
+      [ev.alumnoId, ev.area, d.intentos, d.aciertos, d.completados, d.abandonos, d.nivel, ev.ts]);
 
-    const s = siguienteEstado(prev, ev);
     await cx.query(
       `insert into recorrido_estado values ($1, $2, $3, $4, $5)
        on conflict (alumno_id) do update set ultimo_ts = $2, ultimo_tipo = $3, ultima_area = $4, sesiones = $5`,
-      [ev.alumnoId, s.ultimoTs, s.ultimoTipo, s.ultimaArea, s.sesiones]);
+      [ev.alumnoId, d.estado.ultimoTs, d.estado.ultimoTipo, d.estado.ultimaArea, d.estado.sesiones]);
     await cx.query('commit');
   } catch (e) {
     await cx.query('rollback');
-    throw e; // el consumidor reintenta el mismo mensaje
+    throw e;
   } finally {
     cx.release();
   }

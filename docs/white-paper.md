@@ -1,22 +1,22 @@
 ---
 title: "YOLO: el recorrido vocacional, medido en tiempo real"
-subtitle: "White paper · Analíticas para tutores con Apache Kafka"
+subtitle: "White paper · Analíticas para padres y profesores con Apache Kafka"
 author: "[COMPLETAR: integrantes del grupo]"
 date: "Ingeniería de Software II · Trabajo Práctico Integrador Final · 19 de noviembre de 2026"
 ---
 
 # 1. El problema
 
-Elegir una carrera al terminar la secundaria es una decisión grande que se toma con poca información. La orientación vocacional tradicional se basa en tests y entrevistas puntuales. Dicen *qué podría gustarle* a un estudiante, pero no muestran *qué hace* cuando tiene la oportunidad de explorar. Los padres y tutores, que acompañan la decisión, casi nunca ven ese proceso.
+Elegir una carrera al terminar la secundaria es una decisión grande que se toma con poca información. La orientación vocacional tradicional se basa en tests y entrevistas puntuales. Dicen *qué podría gustarle* a un estudiante, pero no muestran *qué hace* cuando tiene la oportunidad de explorar. Los padres y los profesores, que acompañan la decisión, casi nunca ven ese proceso.
 
 YOLO propone que el estudiante explore carreras jugando y que el recorrido quede registrado: qué áreas exploró, cuánto tiempo les dedicó de verdad y hasta qué profundidad llegó. Esa información, convertida en algo que un adulto entienda, es el valor diferencial del producto.
 
 El problema es técnicamente complejo por cuatro razones:
 
-- **Volumen y ráfagas.** Cada decisión dentro de un juego es un evento. Un curso de 30 alumnos que juega en la misma hora de clase genera miles de eventos en minutos, y los juegos no pueden frenarse esperando que se calculen las métricas.
+- **El juego no espera al cálculo.** Cada intento es un evento. El alumno tiene que poder seguir jugando aunque las métricas se calculen un instante después.
 - **Métricas derivadas, no datos crudos.** El «tiempo dedicado» no es la diferencia entre entrar y salir: hay que descontar la pestaña abierta y abandonada. Esto exige procesar los eventos de cada alumno en orden y con estado.
 - **Métricas que van a cambiar.** El business case prevé ajustar las métricas según los resultados del piloto. Una métrica que se agregue en el mes 6 tiene que poder calcularse también sobre los meses 1 a 5.
-- **Datos de menores de edad.** Cada tutor debe ver solo a sus alumnos, y los datos personales deben circular lo menos posible.
+- **Datos de menores de edad.** Cada padre ve solo a sus hijos y cada profesor, solo a su curso. Los datos personales deben circular lo menos posible.
 
 # 2. La solución: YOLO
 
@@ -24,30 +24,30 @@ YOLO es una plataforma web de juegos por área (Medicina, Sistemas, Derecho…).
 
 **Funcionalidades principales:**
 
-1. Juegos de decisiones por área, con niveles progresivos y el contenido cargado como datos.
+1. Tres juegos de texto, uno por carrera: El caso (Medicina), La bajada (Sistemas) y El tablero (Derecho). No dependen de reflejos. El contenido es datos.
 2. Registro del recorrido: áreas exploradas, tiempo efectivo, profundidad, aciertos y abandonos.
-3. **Dashboard para tutores** con la evolución del alumno *(PoC)*.
-4. **Alertas proactivas al tutor**: descubrió un interés, señal de frustración *(PoC)*.
+3. **Dashboard para padres y profesores** con la evolución del alumno *(PoC)*.
+4. **Alertas**: descubrió un interés al completar dos niveles de un área; señal de frustración al salir dos veces del mismo nivel después de haber intentado *(PoC)*.
 5. Reportes agregados por curso para los colegios.
 6. Gestión de contenidos y suscripciones.
 
 La PoC implementa la historia de usuario central del producto:
 
-> **Como** tutor, **quiero** ver cuánto tiempo dedica mi hijo a cada área, hasta qué nivel llegó y enterarme cuando descubre un interés o se frustra, **para** acompañarlo en su orientación vocacional.
+> **Como** padre o profesor, **quiero** ver cuánto tiempo dedica el alumno a cada área, hasta qué nivel llegó y enterarme cuando descubre un interés o se frustra, **para** acompañarlo en su orientación vocacional.
 
 # 3. Eje funcional: streaming de eventos al servicio del recorrido
 
 ## 3.1 El concepto
 
-En una arquitectura de **streaming de eventos**, cada cosa que pasa se registra como un *evento*: un hecho inmutable, como «Tomás completó el nivel 3 de Derecho a las 11:29». Los eventos se publican en un log ordenado y durable. Los interesados se **suscriben** a ese log por su cuenta, sin que el productor los conozca: es el estilo *publish–subscribe*.
+En una arquitectura de **streaming de eventos**, cada cosa que pasa se registra como un *evento*: un hecho inmutable, como «Tomás completó el nivel 2 de Medicina a las 11:29». Los eventos se publican en un log ordenado y durable. Los interesados se **suscriben** a ese log por su cuenta, sin que el productor los conozca: es el estilo *publish–subscribe*.
 
 Sobre el mismo flujo, la PoC usa los tres tipos de procesamiento de eventos vistos en la materia:
 
 | Tipo | En YOLO |
 |--------------|----------------------------------|
-| *Single event processing* | «Completó el último nivel de un área» → alerta de interés. |
+| *Single event processing* | Un nivel completado actualiza la profundidad. Solo no alcanza para avisar. |
 | *Event stream processing* | Tiempo efectivo, sesiones y profundidad, agregados en línea por alumno. |
-| *Complex event processing* | «3 abandonos seguidos en menos de un minuto» → alerta de frustración. |
+| *Complex event processing* | Dos niveles distintos de un área → interés. Dos salidas del mismo nivel, con intentos antes de cada una → frustración. |
 
 ## 3.2 Utilidad para YOLO, con ejemplos
 
@@ -72,7 +72,7 @@ Sobre el mismo flujo, la PoC usa los tres tipos de procesamiento de eventos vist
 
 - **Kafka.** A favor: es el único que combina log durable con relectura, varios consumidores independientes y orden por clave, y escala con particiones. En contra: es más pesado de operar y está sobredimensionado para un piloto de dos colegios.
 - **RabbitMQ.** A favor: es más simple y muy bueno para repartir tareas. En contra: su modelo de colas borra el mensaje al consumirlo, y el replay, que es justo lo que pide la evolución de las métricas, no es su caso de uso natural.
-- **Batch con Airflow o Prefect.** A favor: es suficiente para reportes mensuales. En contra: el tutor vería el día anterior y las alertas llegarían tarde. Sigue siendo una buena opción *complementaria* para los reportes de colegios.
+- **Batch con Airflow o Prefect.** A favor: es suficiente para reportes mensuales. En contra: la familia vería el día anterior y las alertas llegarían tarde. Sigue siendo una buena opción *complementaria* para los reportes de colegios.
 - **Escritura directa en la base.** A favor: es lo más barato. En contra: acopla el juego a cada métrica, y una caída de la base corta el juego.
 
 **Decisión: Kafka.** En producción conviene usarlo como servicio gestionado, como Confluent Cloud o Azure Event Hubs con su endpoint compatible con Kafka, para no operar los brokers.
@@ -82,12 +82,12 @@ Sobre el mismo flujo, la PoC usa los tres tipos de procesamiento de eventos vist
 | Necesidad del negocio | Decisión técnica | Beneficio |
 |---|---|---|
 | Darles a las familias información sobre la exploración: el valor diferencial | Procesamiento en stream con estado por alumno | Un «tiempo dedicado» creíble, que no se infla con pestañas abandonadas |
-| Riesgo de baja percepción de valor | Alertas al tutor como consumidor independiente | El tutor recibe valor sin tener que entrar al dashboard |
+| Riesgo de baja percepción de valor | Alertas como consumidor independiente | El padre o el profesor recibe valor sin tener que entrar al dashboard |
 | Riesgo de contenido poco atractivo | Detectar patrones de frustración (CEP) | Señal temprana de qué niveles no enganchan, para el equipo de contenidos |
 | Ajustar las métricas después del piloto | Retención infinita y relectura del log | Métricas nuevas sobre toda la historia, sin migraciones |
 | Expandir a más colegios | Particiones y grupos de consumidores | Escalar agregando instancias, sin rediseñar |
 | Costos de infraestructura acotados | Una VM con Docker Compose para el piloto | Unos USD 30 por mes; los servicios gestionados recién en la expansión |
-| Usuarios menores de edad | Eventos con un id seudónimo y control de acceso por vínculo | Menos exposición si se filtra un evento; cada tutor ve solo a los suyos |
+| Usuarios menores de edad | Eventos con un id seudónimo y control de acceso por vínculo | Menos exposición si se filtra un evento; cada padre ve a sus hijos y cada profesor, a su curso |
 
 # 4. Eje técnico: Apache Kafka
 
@@ -108,10 +108,10 @@ Apache Kafka es una plataforma distribuida de *event streaming*. Nació en Linke
 ![Arquitectura de la PoC: un tópico, dos grupos de consumidores y un modelo de lectura.](diagramas/arquitectura.svg)
 
 1. El alumno juega en la app web (Next.js, TypeScript). Cada interacción se envía a `POST /api/eventos` con un `eventId` generado en el navegador, que se repite si hay que reintentar.
-2. La ingesta **valida**: la sesión tiene que ser de un alumno y el área, el nivel y la opción tienen que existir. Después **enriquece** el evento con el nombre del área, el total de niveles y la hora del servidor. Si la respuesta es correcta lo decide el servidor, y el alumno se toma de la sesión, nunca del cuerpo del pedido. El evento se **publica** en Kafka con la clave = alumno y se responde 202.
+2. La ingesta **valida**: la sesión de Clerk tiene que ser de un alumno, y el área y el nivel tienen que existir. El servidor decide si la jugada es correcta. El texto escrito no se publica. El alumno se toma de la sesión, nunca del cuerpo del pedido. El evento se **publica** en Kafka con la clave = alumno y se responde 202. `nivel_completado` lo emite el servidor, no el cliente.
 3. El **proyector** (grupo `dashboard-proyector`) calcula el tiempo efectivo (no cuenta los huecos de más de 2 minutos dentro de un nivel), las sesiones (30 minutos sin actividad cierran una) y la profundidad, y actualiza el modelo de lectura en Postgres.
-4. **Alertas** (grupo `alertas-tutor`) recibe los mismos eventos, detecta interés y frustración, guarda la alerta y le manda un email al tutor. Nombre y email se buscan recién en este paso: el evento solo lleva el id seudónimo.
-5. El **dashboard** del tutor lee el modelo de lectura y se actualiza cada 5 segundos.
+4. **Alertas** (grupo `alertas-tutor`) recibe los mismos eventos. Avisa interés cuando hay dos niveles distintos completados en un área, y frustración cuando el alumno sale dos veces del mismo nivel después de haber intentado. El estado de esa racha queda en Postgres. Nombre y email se buscan recién al mandar el mail: el evento solo lleva el id seudónimo.
+5. El **dashboard** del padre o del profesor lee el modelo de lectura y se actualiza cada 5 segundos.
 
 Todo se levanta con `docker compose up`: Kafka, Postgres, la app web, los dos consumidores, un servidor SMTP de prueba y Kafka UI. El despliegue en la nube usa el mismo compose en una VM de Azure, con HTTPS mediante Caddy.
 
@@ -125,8 +125,8 @@ Los escenarios vienen del árbol de utilidad de YOLO. La evidencia sale de la Po
 | **Confiabilidad.** Un reenvío no se cuenta dos veces. | `eventId` y tabla de eventos procesados, en la misma transacción | El mismo evento enviado dos veces se contó una vez (prueba automática). |
 | **Rendimiento.** El avance se ve en menos de 2 s. | Consumo en línea | 1000 eventos enviados en paralelo: el proyector terminó 0,4 s después del último. |
 | **Disponibilidad.** Si fallan las alertas, la exploración sigue. | Grupos independientes | Al detener `alertas`, ni el juego ni el dashboard se enteraron. |
-| **Seguridad.** Cada tutor ve solo a sus alumnos. | Control por vínculo en cada consulta | Un tutor que pide a un alumno ajeno recibe 404. |
-| **Modificabilidad.** Una métrica nueva o una corrección no modifican lo existente. | Releer el log desde el offset 0 | Se borró el modelo de lectura y se reprocesaron los 1062 mensajes en menos de 20 s. El resultado fue idéntico (mismo hash). |
+| **Seguridad.** Cada adulto ve solo a sus alumnos. | El padre filtra por el vínculo y el profesor, por el curso. | Un profesor que pide a un alumno de otro curso recibe 404. |
+| **Modificabilidad.** Una métrica nueva o una corrección no modifican lo existente. | Releer el log desde el offset 0 | Se borra el modelo de lectura y el proyector reconstruye el dashboard desde el offset 0. |
 
 # 5. Qué hace falta para llevarlo adelante
 
@@ -155,4 +155,4 @@ Con tres personas desarrollando, son unas 6 o 7 semanas de calendario más conti
 
 - **Kafka es mucho para el piloto.** La alternativa de la clase 9 era empezar con un bus interno en la base de datos. Elegimos Kafka desde la PoC porque el replay y la absorción de ráfagas son justamente lo que pide la evolución de las métricas, y porque en una VM cuesta lo mismo. Si el piloto no crece, Kafka se puede reemplazar sin tocar los juegos, ya que los contratos de eventos no cambian.
 - **Operar Kafka con un equipo chico.** Se mitiga pasando a un servicio gestionado en la expansión.
-- **Próximos pasos:** reportes por curso para colegios (un consumidor nuevo), *outbox* para los emails, persistir el estado de la detección de frustración y aplicar contratos de eventos con Schema Registry.
+- **Próximos pasos:** reportes por curso para colegios (un consumidor nuevo), *outbox* para los emails y contratos de eventos con Schema Registry.

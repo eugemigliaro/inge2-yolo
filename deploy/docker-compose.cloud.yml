@@ -9,8 +9,6 @@ services:
     depends_on: [web]
     restart: unless-stopped
   web:
-    environment:
-      COOKIE_SECURE: "true"
     ports: !override ["127.0.0.1:3000:3000"]
   mailpit:
     ports: !override ["127.0.0.1:8025:8025"]

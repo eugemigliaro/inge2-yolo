@@ -1,10 +1,10 @@
 flowchart LR
   alumno(["Alumno<br/>(navegador)"])
-  tutor(["Tutor<br/>(navegador)"])
+  padre(["Padre o profesor<br/>(navegador)"])
   subgraph web["web · Next.js"]
-    juego["Juegos por área"]
-    ingesta["POST /api/eventos<br/>valida · enriquece"]
-    dash["Dashboard del tutor"]
+    juego["Tres juegos"]
+    ingesta["POST /api/eventos<br/>valida · publica"]
+    dash["Dashboard"]
   end
   subgraph kafka["Kafka (KRaft)"]
     topico[["juego.eventos<br/>3 particiones · clave = alumno<br/>retención infinita"]]
@@ -18,4 +18,4 @@ flowchart LR
   topico -- "consume" --> proyector -- "upsert idempotente" --> pg
   topico -- "consume" --> alertas -- "alerta" --> pg
   alertas -- "email" --> mail
-  tutor --> dash -- "lee" --> pg
+  padre --> dash -- "lee" --> pg

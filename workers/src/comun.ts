@@ -3,16 +3,18 @@ import pg from 'pg';
 
 export const TOPICO = 'juego.eventos';
 
-// Contrato del evento que circula por Kafka. No lleva datos personales: solo el id seudónimo del alumno.
+// Contrato del evento que circula por Kafka. No lleva el texto escrito ni datos personales.
 export type EventoJuego = {
   eventId: string;
   alumnoId: string;
-  tipo: 'nivel_iniciado' | 'decision' | 'nivel_completado' | 'nivel_abandonado';
+  tipo: 'nivel_iniciado' | 'intento' | 'nivel_completado' | 'nivel_abandonado';
   area: string;
   areaNombre: string;
   nivel: number;
   totalNiveles: number;
-  correcta?: boolean; // solo en 'decision'
+  acierto?: boolean; // solo en 'intento'
+  cerca?: boolean; // El caso: alguna ficha coincidió o estuvo cerca
+  rareza?: 'obvia' | 'comun' | 'rara'; // La bajada, solo si la respuesta entró al banco
   ts: number; // epoch ms, lo asigna el servidor al recibir el evento
 };
 

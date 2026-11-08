@@ -3,7 +3,7 @@ import { exigirRol } from '@/lib/auth';
 import { AREAS } from '@/lib/contenido';
 import { db } from '@/lib/db';
 
-export default async function Areas() {
+export default async function Sala() {
   const u = await exigirRol('alumno');
   const { rows } = await db.query('select area, nivel_max from progreso_area where alumno_id = $1', [u.id]);
   const completado = Object.fromEntries(rows.map((r) => [r.area, r.nivel_max as number]));
@@ -11,11 +11,13 @@ export default async function Areas() {
   return (
     <>
       <h1>Hola, {u.nombre}</h1>
-      <p className="tenue">Elegí un área y jugá. Cada nivel que completás desbloquea el siguiente.</p>
+      <p className="tenue">Tres juegos distintos, uno por carrera. Completar un nivel abre el siguiente de esa carrera, no de otra.</p>
+      {u.codigo && <p>Tu código para un padre: <strong>{u.codigo}</strong></p>}
       <div className="grilla">
         {AREAS.map((a) => (
-          <section key={a.slug} className="tarjeta">
-            <h2><span className={`punto area-${a.slug}`} /> {a.nombre}</h2>
+          <section key={a.slug} className={`tarjeta puerta puerta-${a.slug}`}>
+            <h2><span className={`punto area-${a.slug}`} /> {a.juego}</h2>
+            <p>{a.nombre}</p>
             <p className="tenue">{a.descripcion}</p>
             <ol className="niveles">
               {a.niveles.map((n, i) => {

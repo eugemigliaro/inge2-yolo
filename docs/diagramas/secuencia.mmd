@@ -6,9 +6,9 @@ sequenceDiagram
   participant P as proyector
   participant L as alertas
   participant DB as Postgres
-  actor T as Tutor
-  A->>W: completa el nivel 3 de Derecho {eventId, tipo, área, nivel}
-  W->>W: valida sesión y contenido, agrega área, total de niveles y hora
+  actor T as Padre
+  A->>W: completa el segundo nivel de Medicina
+  W->>W: valida la sesión de alumno y el juego, y decide si el nivel se completó
   W->>K: produce (clave = id del alumno)
   W-->>A: 202 Accepted
   par cada grupo recibe el evento
@@ -16,9 +16,9 @@ sequenceDiagram
     P->>DB: BEGIN · registra eventId (descarta si ya estaba) · suma tiempo y nivel · COMMIT
   and
     K->>L: evento
-    L->>L: ¿completó el último nivel?
+    L->>L: ¿completó dos niveles distintos?
     L->>DB: guarda la alerta «descubrió un interés»
-    L->>T: email al tutor
+    L->>T: email al padre
   end
   T->>W: dashboard (se actualiza cada 5 s)
   W->>DB: lee el recorrido de sus alumnos

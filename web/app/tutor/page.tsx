@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { exigirRol } from '@/lib/auth';
 import { AREAS } from '@/lib/contenido';
 import { db } from '@/lib/db';
+import { alumnosDe } from '@/lib/vinculos';
 import { Refrescar } from './Refrescar';
 
 const ZONA = 'America/Argentina/Buenos_Aires';
@@ -17,14 +18,13 @@ function duracion(ms: number) {
 const nombreArea = (slug: string) => AREAS.find((a) => a.slug === slug)?.nombre ?? slug;
 
 export default async function Dashboard({ searchParams }: { searchParams: Promise<{ alumno?: string }> }) {
-  const tutor = await exigirRol('tutor');
-  const { rows: alumnos } = await db.query(
-    'select u.id, u.nombre from tutor_alumno ta join usuarios u on u.id = ta.alumno_id where ta.tutor_id = $1 order by u.nombre', [tutor.id]);
+  const adulto = await exigirRol(['padre', 'profesor']);
+  const alumnos = await alumnosDe(adulto);
   if (alumnos.length === 0) return <p>Todavía no tenés alumnos vinculados.</p>;
 
   const pedido = (await searchParams).alumno ?? alumnos[0].id;
   const alumno = alumnos.find((a) => a.id === pedido);
-  if (!alumno) notFound(); // un tutor solo ve a sus alumnos vinculados
+  if (!alumno) notFound();
 
   const [progreso, diaria, alertas, estado] = await Promise.all([
     db.query('select * from progreso_area where alumno_id = $1', [alumno.id]),
@@ -37,7 +37,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
     const p = progreso.rows.find((r) => r.area === a.slug);
     return {
       ...a, tiempo: Number(p?.tiempo_ms ?? 0), nivelMax: p?.nivel_max ?? 0, abandonos: p?.abandonos ?? 0,
-      decisiones: p?.decisiones ?? 0, aciertos: p?.aciertos ?? 0,
+      intentos: p?.intentos ?? 0, aciertos: p?.aciertos ?? 0,
     };
   });
   const total = porArea.reduce((s, a) => s + a.tiempo, 0);
@@ -112,7 +112,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
                 {a.niveles.map((_, k) => <span key={k} className={k < a.nivelMax ? `lleno area-${a.slug}` : 'vacio'} />)}
               </span>
               <span className="tenue">
-                {a.nivelMax}/{a.niveles.length} · {a.decisiones ? `${Math.round((a.aciertos / a.decisiones) * 100)} % aciertos` : 'sin decisiones'}
+                {a.nivelMax}/{a.niveles.length} · {a.intentos ? `${Math.round((a.aciertos / a.intentos) * 100)} % aciertos` : 'sin intentos'}
                 {a.abandonos > 0 && ` · ${a.abandonos} abandono${a.abandonos > 1 ? 's' : ''}`}
               </span>
             </div>

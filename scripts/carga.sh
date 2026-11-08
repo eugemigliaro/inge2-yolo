@@ -1,18 +1,17 @@
 #!/usr/bin/env bash
 # Manda N eventos de Tomás, de a 20 en paralelo, y mide cuánto tarda el proyector en procesarlos todos.
 set -eu
-N=${1:-1000}; B=${B:-http://localhost:3000}; J=$(mktemp)
+N=${1:-1000}; B=${B:-http://localhost:3000}
 cd "$(dirname "$0")/.."
 sql() { docker compose exec -T postgres psql -U yolo -tAc "$1"; }
-accion=$(curl -s "$B/" | grep -o '\$ACTION_ID_[0-9a-f]*' | head -1)
-curl -s -o /dev/null -c "$J" -H "Origin: $B" -F "$accion=" -F email=tomas@yolo.test -F password=yolo1234 "$B/"
+ahora() { bun -e 'process.stdout.write(String(Date.now()))'; }
+TOKEN=$(bun scripts/clerk.mjs token tomas+clerk_test@example.com)
 antes=$(sql "select count(*) from eventos_procesados")
-t0=$(date +%s.%N)
-seq "$N" | xargs -P 20 -I{} sh -c "curl -s -o /dev/null -w '%{http_code}\n' -b $J -H 'content-type: application/json' \
-  -d \"{\\\"eventId\\\":\\\"\$(cat /proc/sys/kernel/random/uuid)\\\",\\\"tipo\\\":\\\"decision\\\",\\\"area\\\":\\\"sistemas\\\",\\\"nivel\\\":1,\\\"situacion\\\":0,\\\"opcion\\\":1}\" $B/api/eventos" \
+t0=$(ahora)
+seq "$N" | xargs -P 20 -I{} sh -c 'curl -s -o /dev/null -w "%{http_code}\n" -H "Authorization: Bearer $1" -H "content-type: application/json" \
+  -d "{\"eventId\":\"$(uuidgen | tr "[:upper:]" "[:lower:]")\",\"tipo\":\"nivel_iniciado\",\"area\":\"sistemas\",\"nivel\":1}" "$2"' _ "$TOKEN" "$B/api/eventos" \
   | sort | uniq -c
-t1=$(date +%s.%N)
+t1=$(ahora)
 until [ "$(sql "select count(*) from eventos_procesados")" -ge $((antes + N)) ]; do sleep 0.2; done
-t2=$(date +%s.%N)
-rm -f "$J"
-echo "Ingesta: $N eventos en $(echo "$t1 - $t0" | bc) s. Todos procesados a los $(echo "$t2 - $t0" | bc) s (atraso del proyector: $(echo "$t2 - $t1" | bc) s)."
+t2=$(ahora)
+bun -e 'const [t0,t1,t2,n]=process.argv.slice(1).map(Number); const s=(a,b)=>((b-a)/1000).toFixed(1); console.log(`Ingesta: ${n} eventos en ${s(t0,t1)} s. Todos procesados a los ${s(t0,t2)} s (atraso del proyector: ${s(t1,t2)} s).`)' "$t0" "$t1" "$t2" "$N"

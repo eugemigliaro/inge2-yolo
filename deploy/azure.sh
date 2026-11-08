@@ -22,7 +22,13 @@ until ssh -o StrictHostKeyChecking=accept-new "azureuser@$HOST" docker version >
   echo "Esperando a que la VM termine de instalar Docker..."; sleep 15
 done
 rsync -az --delete --exclude node_modules --exclude .next --exclude .git --exclude .env ./ "azureuser@$HOST:yolo/"
-# La contraseña de Postgres se genera una sola vez en la VM y nunca sale de ahí.
+# Las claves de Clerk salen del .env local y no se imprimen. La de Postgres se genera una sola vez en la VM.
+if [ -f .env ]; then
+  grep -E '^(NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY|CLERK_SECRET_KEY)=' .env > /tmp/yolo-clerk.env || true
+  scp -q /tmp/yolo-clerk.env "azureuser@$HOST:yolo/clerk.env"
+  rm -f /tmp/yolo-clerk.env
+fi
 ssh "azureuser@$HOST" "cd yolo && { [ -f .env ] || printf 'POSTGRES_PASSWORD=%s\nDOMINIO=%s\n' \$(openssl rand -hex 16) $HOST > .env; } \
+  && if [ -f clerk.env ]; then grep -v -E '^(NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY|CLERK_SECRET_KEY)=' .env > .env.new && mv .env.new .env && cat clerk.env >> .env && rm clerk.env; fi \
   && docker compose -f docker-compose.yml -f deploy/docker-compose.cloud.yml up -d --build"
 echo "Listo: https://$HOST"
