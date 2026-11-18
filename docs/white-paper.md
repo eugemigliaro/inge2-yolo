@@ -1,26 +1,69 @@
 ---
-title: "YOLO: el recorrido vocacional, medido en tiempo real"
-subtitle: "White paper · Analíticas para padres y profesores con Apache Kafka"
-author: "[COMPLETAR: integrantes del grupo]"
-date: "Ingeniería de Software II · Trabajo Práctico Integrador Final · 19 de noviembre de 2026"
+pagetitle: "YOLO — White paper · TPIF Ingeniería de Software II"
+lang: es
 ---
 
-# 1. El problema
+<div class="caratula">
 
-Elegir una carrera al terminar la secundaria es una decisión grande que se toma con poca información. La orientación vocacional tradicional se basa en tests y entrevistas puntuales. Dicen *qué podría gustarle* a un estudiante, pero no muestran *qué hace* cuando tiene la oportunidad de explorar. Los padres y los profesores, que acompañan la decisión, casi nunca ven ese proceso.
+<p class="materia"><strong>Ingeniería de Software II</strong></p>
+<p class="subtitulo">Trabajo Práctico Integrador Final · White paper</p>
+<p class="subtitulo">Instituto Tecnológico de Buenos Aires</p>
+<p><img src="img/logo-itba.png" alt="ITBA" width="240"></p>
+<p class="subtitulo">YOLO: el recorrido vocacional, medido en tiempo real</p>
 
-YOLO propone que el estudiante explore carreras jugando y que el recorrido quede registrado: qué áreas exploró, cuánto tiempo les dedicó de verdad y hasta qué profundidad llegó. Esa información, convertida en algo que un adulto entienda, es el valor diferencial del producto.
+</div>
 
-El problema es técnicamente complejo por cuatro razones:
+<div class="integrantes">
+
+**Integrantes:**
+
+- Branda, Franco (65506)
+- Costa, Francisco (65202)
+- Garbarz, Andrés
+- Migliaro, Eugenio (65508)
+
+**Repositorio:** <https://github.com/eugemigliaro/inge2-yolo>
+
+2.º cuatrimestre de 2026
+
+</div>
+
+<div class="salto"></div>
+
+## Contenido
+
+- [1. El problema](#problema)
+- [2. La solución: YOLO](#solucion)
+- [3. Eje funcional: streaming de eventos al servicio del recorrido](#eje-funcional)
+    - [3.1 El concepto](#concepto)
+    - [3.2 Utilidad para YOLO, con ejemplos](#utilidad)
+    - [3.3 Comparativa de alternativas](#comparativa)
+    - [3.4 Cómo las decisiones técnicas sirven al negocio](#negocio)
+- [4. Eje técnico: Apache Kafka](#eje-tecnico)
+    - [4.1 Qué es y cómo funciona](#kafka)
+    - [4.2 Arquitectura de la prueba de concepto](#arquitectura)
+    - [4.3 Atributos de calidad: escenarios y evidencia](#atributos)
+- [5. Qué hace falta para llevarlo adelante](#recursos)
+- [6. Riesgos y próximos pasos](#riesgos)
+
+<div class="salto"></div>
+
+## 1. El problema {#problema}
+
+Elegir una carrera al terminar la secundaria es una decisión grande que se toma con poca información. La orientación vocacional tradicional se basa en tests y entrevistas puntuales, y tiene tres límites. Pregunta por actividades que el estudiante nunca probó, así que responde según la imagen que tiene de cada carrera. Mide lo que declara, que puede estar influido por la familia, los amigos o el prestigio de una profesión. Y toma una foto de un día, a una edad en la que los intereses todavía cambian. Los padres y los profesores, que acompañan la decisión, ven a lo sumo el resultado del test, no cómo explora el estudiante.
+
+Lo que falta es poder probar: que el estudiante explore las carreras jugando y que su recorrido quede registrado, es decir, qué áreas exploró, cuánto tiempo les dedicó de verdad y hasta qué profundidad llegó, en una forma que un adulto entienda.
+
+Registrar ese recorrido es técnicamente complejo por cuatro razones:
 
 - **El juego no espera al cálculo.** Cada intento es un evento. El alumno tiene que poder seguir jugando aunque las métricas se calculen un instante después.
 - **Métricas derivadas, no datos crudos.** El «tiempo dedicado» no es la diferencia entre entrar y salir: hay que descontar la pestaña abierta y abandonada. Esto exige procesar los eventos de cada alumno en orden y con estado.
-- **Métricas que van a cambiar.** El business case prevé ajustar las métricas según los resultados del piloto. Una métrica que se agregue en el mes 6 tiene que poder calcularse también sobre los meses 1 a 5.
+- **Métricas que van a cambiar.** Qué conviene medir se va a ir ajustando con el uso real. Una métrica que se agregue en el mes 6 tiene que poder calcularse también sobre los meses 1 a 5.
 - **Datos de menores de edad.** Cada padre ve solo a sus hijos y cada profesor, solo a su curso. Los datos personales deben circular lo menos posible.
 
-# 2. La solución: YOLO
+## 2. La solución: YOLO {#solucion}
 
-YOLO es una plataforma web de juegos por área (Medicina, Sistemas, Derecho…). Cada área tiene niveles que se profundizan progresivamente, y completar uno desbloquea el siguiente. Los colegios la incorporan como material y las familias pagan una suscripción mensual.
+YOLO es una plataforma web de juegos por área (Medicina, Sistemas, Derecho…). Cada área tiene niveles que se profundizan progresivamente, y completar uno desbloquea el siguiente. A diferencia de un test, no recomienda una carrera: registra cómo explora el estudiante y convierte ese recorrido en información que un adulto entiende, que es el valor diferencial del producto. Los colegios la incorporan como material y las familias pagan una suscripción mensual.
 
 **Funcionalidades principales:**
 
@@ -35,9 +78,9 @@ La PoC implementa la historia de usuario central del producto:
 
 > **Como** padre o profesor, **quiero** ver cuánto tiempo dedica el alumno a cada área, hasta qué nivel llegó y enterarme cuando descubre un interés o se frustra, **para** acompañarlo en su orientación vocacional.
 
-# 3. Eje funcional: streaming de eventos al servicio del recorrido
+## 3. Eje funcional: streaming de eventos al servicio del recorrido {#eje-funcional}
 
-## 3.1 El concepto
+### 3.1 El concepto {#concepto}
 
 En una arquitectura de **streaming de eventos**, cada cosa que pasa se registra como un *evento*: un hecho inmutable, como «Tomás completó el nivel 2 de Medicina a las 11:29». Los eventos se publican en un log ordenado y durable. Los interesados se **suscriben** a ese log por su cuenta, sin que el productor los conozca: es el estilo *publish–subscribe*.
 
@@ -49,14 +92,14 @@ Sobre el mismo flujo, la PoC usa los tres tipos de procesamiento de eventos vist
 | *Event stream processing* | Tiempo efectivo, sesiones y profundidad, agregados en línea por alumno. |
 | *Complex event processing* | Dos niveles distintos de un área → interés. Dos salidas del mismo nivel, con intentos antes de cada una → frustración. |
 
-## 3.2 Utilidad para YOLO, con ejemplos
+### 3.2 Utilidad para YOLO, con ejemplos {#utilidad}
 
 - **Un hecho, varios interesados.** `nivel_completado` le sirve al dashboard, a las alertas y, más adelante, a los reportes del colegio y a las métricas de negocio. Cada uno es un consumidor nuevo; el juego no cambia.
 - **Absorber la hora de clase.** El juego publica y recibe la respuesta enseguida (HTTP 202). Si el procesamiento se atrasa o se cae, los eventos esperan en el log y los alumnos siguen jugando.
 - **Una métrica nueva sobre toda la historia.** Si el piloto pide «áreas que el alumno revisitó», se suma un consumidor que lee el log desde el principio y calcula la métrica para todos los alumnos, sin migrar datos ni tocar lo que ya funciona.
 - **Corregir un error de cálculo.** Si una regla del tiempo efectivo estaba mal, se corrige el consumidor y se reprocesa la historia. El modelo de lectura se reconstruye desde los hechos originales.
 
-## 3.3 Comparativa de alternativas
+### 3.3 Comparativa de alternativas {#comparativa}
 
 | Criterio | **Kafka** | RabbitMQ | Batch nocturno (Airflow / Prefect) | Escritura directa en la base |
 |---|---|---|---|---|
@@ -77,7 +120,7 @@ Sobre el mismo flujo, la PoC usa los tres tipos de procesamiento de eventos vist
 
 **Decisión: Kafka.** En producción conviene usarlo como servicio gestionado, como Confluent Cloud o Azure Event Hubs con su endpoint compatible con Kafka, para no operar los brokers.
 
-## 3.4 Cómo las decisiones técnicas sirven al negocio
+### 3.4 Cómo las decisiones técnicas sirven al negocio {#negocio}
 
 | Necesidad del negocio | Decisión técnica | Beneficio |
 |---|---|---|
@@ -89,9 +132,9 @@ Sobre el mismo flujo, la PoC usa los tres tipos de procesamiento de eventos vist
 | Costos de infraestructura acotados | Una VM con Docker Compose para el piloto | Unos USD 30 por mes; los servicios gestionados recién en la expansión |
 | Usuarios menores de edad | Eventos con un id seudónimo y control de acceso por vínculo | Menos exposición si se filtra un evento; cada padre ve a sus hijos y cada profesor, a su curso |
 
-# 4. Eje técnico: Apache Kafka
+## 4. Eje técnico: Apache Kafka {#eje-tecnico}
 
-## 4.1 Qué es y cómo funciona
+### 4.1 Qué es y cómo funciona {#kafka}
 
 Apache Kafka es una plataforma distribuida de *event streaming*. Nació en LinkedIn y hoy es un proyecto de la Apache Software Foundation. Su abstracción central es un **log de solo escritura al final** (*append-only*), durable y particionado:
 
@@ -103,7 +146,7 @@ Apache Kafka es una plataforma distribuida de *event streaming*. Nació en Linke
 - **KRaft.** Desde Kafka 4.0, los metadatos del clúster se gestionan con un protocolo de consenso propio basado en Raft, y ZooKeeper ya no existe. Por eso la PoC corre en un solo contenedor que es broker y controlador a la vez.
 - **Ecosistema.** Kafka Connect (integración con bases y servicios), Kafka Streams (procesamiento en Java), Schema Registry (contratos de eventos) y servicios gestionados como Confluent Cloud, Amazon MSK y Azure Event Hubs.
 
-## 4.2 Arquitectura de la prueba de concepto
+### 4.2 Arquitectura de la prueba de concepto {#arquitectura}
 
 ![Arquitectura de la PoC: un tópico, dos grupos de consumidores y un modelo de lectura.](diagramas/arquitectura.svg)
 
@@ -115,7 +158,7 @@ Apache Kafka es una plataforma distribuida de *event streaming*. Nació en Linke
 
 Todo se levanta con `docker compose up`: Kafka, Postgres, la app web, los dos consumidores, un servidor SMTP de prueba y Kafka UI. El despliegue en la nube usa el mismo compose en una VM de Azure, con HTTPS mediante Caddy.
 
-## 4.3 Atributos de calidad: escenarios y evidencia
+### 4.3 Atributos de calidad: escenarios y evidencia {#atributos}
 
 Los escenarios vienen del árbol de utilidad de YOLO. La evidencia sale de la PoC, ejecutada en una notebook.
 
@@ -128,7 +171,7 @@ Los escenarios vienen del árbol de utilidad de YOLO. La evidencia sale de la Po
 | **Seguridad.** Cada adulto ve solo a sus alumnos. | El padre filtra por el vínculo y el profesor, por el curso. | Un profesor que pide a un alumno de otro curso recibe 404. |
 | **Modificabilidad.** Una métrica nueva o una corrección no modifican lo existente. | Releer el log desde el offset 0 | Se borra el modelo de lectura y el proyector reconstruye el dashboard desde el offset 0. |
 
-# 5. Qué hace falta para llevarlo adelante
+## 5. Qué hace falta para llevarlo adelante {#recursos}
 
 **Tiempo.** Estimamos con PERT, en semanas-persona, el módulo de analíticas listo para el piloto: el paso de la PoC a producción.
 
@@ -140,18 +183,18 @@ Los escenarios vienen del árbol de utilidad de YOLO. La evidencia sale de la Po
 | Alertas y email transaccional con *outbox* | 1 | 2 | 4 | 2,2 |
 | Infraestructura gestionada, monitoreo del *lag* y seguridad | 2 | 3 | 6 | 3,3 |
 | Pruebas y puesta en marcha del piloto | 2 | 3 | 5 | 3,2 |
-| **Total** | | | | **18,4** |
+| **Total** | | | | **18,3** |
 
 Con tres personas desarrollando, son unas 6 o 7 semanas de calendario más contingencia. Entra en los meses 1 a 3 del plan del business case, junto con los juegos.
 
-**Recursos humanos.** [COMPLETAR según el grupo] Una persona de backend y datos (Kafka, consumidores), una de frontend (juegos y dashboard) y una de producto y contenidos (diseño de los juegos, validación con colegios y familias). Hace falta además una dedicación parcial a operación.
+**Recursos humanos.** Una persona de backend y datos (Kafka, consumidores), una de frontend (juegos y dashboard) y una de producto y contenidos (diseño de los juegos, validación con colegios y familias). Hace falta además una dedicación parcial a operación.
 
 **Recursos técnicos.**
 
 - **Piloto:** una VM de 2 vCPU y 4 GB, unos USD 30 por mes a precio de lista, más dominio y un servicio de email transaccional.
 - **Expansión:** Kafka gestionado con tres réplicas, Postgres gestionado y más instancias de los consumidores. Son precios de lista aproximados, a revisar al presupuestar.
 
-# 6. Riesgos y próximos pasos
+## 6. Riesgos y próximos pasos {#riesgos}
 
 - **Kafka es mucho para el piloto.** La alternativa de la clase 9 era empezar con un bus interno en la base de datos. Elegimos Kafka desde la PoC porque el replay y la absorción de ráfagas son justamente lo que pide la evolución de las métricas, y porque en una VM cuesta lo mismo. Si el piloto no crece, Kafka se puede reemplazar sin tocar los juegos, ya que los contratos de eventos no cambian.
 - **Operar Kafka con un equipo chico.** Se mitiga pasando a un servicio gestionado en la expansión.
