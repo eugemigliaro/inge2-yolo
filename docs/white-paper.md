@@ -19,7 +19,7 @@ lang: es
 
 - Branda, Franco (65506)
 - Costa, Francisco (65202)
-- Garbarz, Andrés
+- Garbarz, Andrés (65488)
 - Migliaro, Eugenio (65508)
 
 **Repositorio:** <https://github.com/eugemigliaro/inge2-yolo>
