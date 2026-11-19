@@ -197,15 +197,22 @@ th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--bord
 .ficha-arrastre.elegida { outline: 3px solid var(--derecho); outline-offset: 1px; }
 .fantasma { position: fixed; z-index: 30; max-width: 260px; transform: translate(-30%, -120%); pointer-events: none; padding: 12px 14px; border-radius: 10px; background: var(--superficie); border: 1px solid var(--acento); box-shadow: 0 8px 24px rgba(0, 0, 0, .18); }
 
-.bajada-banco { font-size: 1.05rem; }
-.bajada-input { font-size: 1.15rem; padding: 14px; }
-.bajada-slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 16px 0; }
-.slot { min-height: 92px; border-radius: 12px; padding: 12px; display: grid; align-content: center; gap: 4px; background: var(--pista); }
-.slot.vacio { border: 2px dashed var(--borde); color: var(--texto-2); background: transparent; }
-.slot.obvia { background: color-mix(in srgb, var(--sistemas) 18%, var(--superficie)); }
-.slot.comun { background: color-mix(in srgb, var(--aviso) 28%, var(--superficie)); }
-.slot.rara { background: color-mix(in srgb, var(--bien) 22%, var(--superficie)); }
-.slot span { font-size: .8rem; color: var(--texto-2); }
+.bajada h2 { margin: 20px 0 10px; }
+.bajada-input { font-size: 1.1rem; padding: 12px 14px; }
+.bajada-progreso { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; margin: 16px 0 12px; font-size: .95rem; }
+.meta-segmentos { display: flex; gap: 4px; }
+.meta-segmentos span { width: 34px; height: 10px; border-radius: 999px; background: var(--pista); border: 1px solid var(--borde); }
+.meta-segmentos span.lleno { background: var(--sistemas); border-color: var(--sistemas); }
+.requisito { padding: 2px 10px; border-radius: 999px; border: 1px dashed var(--borde); color: var(--texto-2); font-size: .85rem; }
+.requisito.hecho { border: 1px solid var(--bien); color: var(--bien); }
+.respuestas { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.respuesta { display: inline-flex; align-items: center; gap: 8px; padding: 6px 6px 6px 14px; border-radius: 999px; font-weight: 600; background: var(--superficie); border: 1px solid var(--borde); }
+.etiqueta-rareza { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .7rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; vertical-align: middle; background: var(--pista); color: var(--texto-2); }
+.etiqueta-rareza.comun { background: color-mix(in srgb, var(--sistemas) 82%, #000); color: #fff; }
+.etiqueta-rareza.rara { background: #6a4cf0; color: #fff; }
+.etiqueta-rareza.rara::before { content: '★ '; }
+.respuesta.comun { border-color: color-mix(in srgb, var(--sistemas) 55%, var(--borde)); background: color-mix(in srgb, var(--sistemas) 10%, var(--superficie)); }
+.respuesta.rara { border-color: #6a4cf0; background: color-mix(in srgb, #6a4cf0 12%, var(--superficie)); }
 
 /* El caso: misma tarjeta clara que los otros dos juegos, con el azul de Medicina. */
 .caso { max-width: 760px; }
@@ -242,7 +249,7 @@ th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--bord
 .caso-ficha small { font-size: .75rem; }
 @media (max-width: 640px) { .caso-fichas { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 720px) {
-  .tablero, .bajada-slots { grid-template-columns: 1fr; }
+  .tablero { grid-template-columns: 1fr; }
 }
 
 .enlace-barra { color: #fff; text-decoration: none; font-weight: 600; }

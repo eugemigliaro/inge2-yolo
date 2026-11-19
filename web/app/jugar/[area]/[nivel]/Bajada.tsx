@@ -5,7 +5,18 @@ import type { Aceptada, Rareza } from '@/lib/juegos/bajada';
 import { enviar, useNivel } from './cliente';
 
 const RAREZA: Record<Rareza, string> = { obvia: 'obvia', comun: 'común', rara: 'rara' };
+const PLURAL: Record<Rareza, string> = { obvia: 'obvias', comun: 'comunes', rara: 'raras' };
 type Aviso = { texto: string; tono: 'bien' | 'mal' };
+
+function resumen(aceptadas: Aceptada[]) {
+  const partes = (['obvia', 'comun', 'rara'] as Rareza[])
+    .map((r) => [r, aceptadas.filter((a) => a.rareza === r).length] as const)
+    .filter(([, n]) => n > 0)
+    .map(([r, n]) => `${n} ${n === 1 ? RAREZA[r] : PLURAL[r]}`);
+  return partes.length > 1 ? `${partes.slice(0, -1).join(', ')} y ${partes.at(-1)}` : partes[0];
+}
+
+const Etiqueta = ({ rareza }: { rareza: Rareza }) => <span className={`etiqueta-rareza ${rareza}`}>{RAREZA[rareza]}</span>;
 
 export function Bajada({ area, areaNombre, nivel, totalNiveles, titulo, consigna, ejemplo, exige, tamano, paraCompletar, inicial }: {
   area: string; areaNombre: string; nivel: number; totalNiveles: number; titulo: string; consigna: string; ejemplo: string;
@@ -44,47 +55,69 @@ export function Bajada({ area, areaNombre, nivel, totalNiveles, titulo, consigna
     if (data.completado) setFin(true);
   }
 
-  const falta = exige === 'comun' ? 'Al menos una tiene que ser común, de las que no se le ocurren a cualquiera.' : `Alcanza con ${paraCompletar}, aunque sean obvias.`;
-  const huecos = Math.max(paraCompletar, aceptadas.length);
+  const llenas = Math.min(aceptadas.length, paraCompletar);
+  const noObvia = aceptadas.some((a) => a.rareza !== 'obvia');
 
   return (
     <section className="tarjeta juego juego-area tono-sistemas bajada">
       <p className="tenue">{areaNombre} · La bajada · Nivel {nivel} de {totalNiveles}: {titulo}</p>
-      <h1>{consigna}</h1>
-      <p className="tenue">
-        Escribí respuestas cortas, de a una. Cada una que entra se marca como obvia, común o rara según cuánta gente
-        la dice. Si una no está en nuestra lista, no te resta.
-      </p>
-      <p className="bajada-banco">
-        {fin ? <strong className="logrado">Completaste el nivel.</strong> : `Llevás ${aceptadas.length} de ${paraCompletar}. ${falta}`}
-        {' '}El banco tiene {tamano} respuestas.
-      </p>
-      <div className="bajada-slots" aria-label="Respuestas aceptadas">
-        {Array.from({ length: huecos }, (_, i) => {
-          const a = aceptadas[i];
-          return (
-            <div key={i} className={a ? `slot ${a.rareza}` : 'slot vacio'}>
-              {a ? <><strong>{a.texto}</strong><span>{RAREZA[a.rareza]}</span></> : <span>Respuesta {i + 1}</span>}
-            </div>
-          );
-        })}
-      </div>
+
       {fin ? (
-        <div className="acciones">
-          {nivel < totalNiveles && <Link className="boton" href={`/jugar/${area}/${nivel + 1}`}>Siguiente nivel</Link>}
-          <Link className="boton secundario" href="/jugar">Volver a la sala</Link>
-        </div>
-      ) : (
-        <form onSubmit={probar}>
-          <div className="fila-juego">
-            <input className="entrada bajada-input" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={`Por ejemplo: ${ejemplo}`} aria-label="Respuesta" autoComplete="off" />
-            <button className="boton" disabled={ocupado}>Sumar</button>
-          </div>
-          {aviso && <p role="status" className={`aviso ${aviso.tono}`}>{aviso.texto}</p>}
+        <>
+          <h1>¡Nivel completado!</h1>
+          <p className="tenue">{consigna}</p>
+          <p>Juntaste {aceptadas.length} respuestas: {resumen(aceptadas)}.</p>
           <div className="acciones">
-            <button type="button" className="boton secundario" onClick={salir}>Salir del nivel</button>
+            {nivel < totalNiveles && <Link className="boton" href={`/jugar/${area}/${nivel + 1}`}>Siguiente nivel</Link>}
+            <Link className="boton secundario" href="/jugar">Volver a la sala</Link>
           </div>
-        </form>
+        </>
+      ) : (
+        <>
+          <h1>{consigna}</h1>
+          <p className="tenue">
+            Escribí respuestas cortas, de a una. Según cuánta gente la dice, cada una que entra se marca
+            como <Etiqueta rareza="obvia" /> <Etiqueta rareza="comun" /> o <Etiqueta rareza="rara" />. Hay {tamano} posibles,
+            y si una no está en nuestra lista no te resta.
+          </p>
+
+          <div className="bajada-progreso">
+            <span className="meta-segmentos" role="img" aria-label={`${llenas} de ${paraCompletar} respuestas`}>
+              {Array.from({ length: paraCompletar }, (_, i) => <span key={i} className={i < llenas ? 'lleno' : undefined} />)}
+            </span>
+            <span>{aceptadas.length} de {paraCompletar}</span>
+            {exige && (
+              <span className={`requisito${noObvia ? ' hecho' : ''}`}>
+                {noObvia ? '✓' : '○'} Al menos una que no sea obvia
+              </span>
+            )}
+          </div>
+
+          <form onSubmit={probar}>
+            <div className="fila-juego">
+              <input className="entrada bajada-input" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={`Por ejemplo: ${ejemplo}`} aria-label="Respuesta" autoComplete="off" />
+              <button className="boton" disabled={ocupado}>Sumar</button>
+            </div>
+          </form>
+          <p role="status" className={`aviso ${aviso?.tono ?? ''}`}>{aviso?.texto}</p>
+        </>
+      )}
+
+      {aceptadas.length > 0 && (
+        <>
+          <h2>Tus respuestas</h2>
+          <ul className="respuestas">
+            {aceptadas.map((a) => (
+              <li key={a.texto} className={`respuesta ${a.rareza}`}>{a.texto}<Etiqueta rareza={a.rareza} /></li>
+            ))}
+          </ul>
+        </>
+      )}
+
+      {!fin && (
+        <div className="acciones">
+          <button type="button" className="boton secundario" onClick={salir}>Salir del nivel</button>
+        </div>
       )}
     </section>
   );

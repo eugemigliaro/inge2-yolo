@@ -129,8 +129,9 @@ export function buscar(banco: Entrada[], respuesta: string) {
 
 export const estadoBajada = (): EstadoBajada => ({ completado: false, aceptadas: [] });
 
+// «Una común» se cumple con una común o con una rara: lo que importa es que no sean todas obvias.
 const cumple = (aceptadas: Aceptada[], datos: Nivel) =>
-  aceptadas.length >= datos.meta && (!datos.exige || aceptadas.some((a) => a.rareza === datos.exige));
+  aceptadas.length >= datos.meta && (!datos.exige || aceptadas.some((a) => a.rareza !== 'obvia'));
 
 export function intentarBajada(nivel: number, respuesta: string, estado: EstadoBajada) {
   const datos = NIVELES[nivel - 1];
