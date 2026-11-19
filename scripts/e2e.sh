@@ -11,7 +11,13 @@ fi
 check() { if [ "$2" = "$3" ]; then echo "ok    $1"; else echo "FALLA $1: dio '$2', se esperaba '$3'"; FALLAS=$((FALLAS + 1)); fi; }
 uuid() { uuidgen | tr '[:upper:]' '[:lower:]'; }
 sql() { docker compose exec -T postgres psql -U yolo -tAc "$1"; }
-ev() { curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $1" -H 'content-type: application/json' -d "$2" "$B/api/eventos"; }
+# ev TOKEN EVENT_ID TIPO AREA NIVEL [CAMPOS_EXTRA]. El JSON se arma acá adentro: el bash 3.2 de macOS
+# expande las llaves de un JSON escrito entre comillas dentro de "$(...)" y lo parte en varias palabras.
+ev() {
+  local cuerpo
+  cuerpo=$(printf '{"eventId":"%s","tipo":"%s","area":"%s","nivel":%s%s}' "$2" "$3" "$4" "$5" "${6:+,$6}")
+  curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $1" -H 'content-type: application/json' -d "$cuerpo" "$B/api/eventos"
+}
 pagina() { curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $1" "$2"; }
 
 TOMAS_T=$(bun scripts/clerk.mjs token tomas+clerk_test@example.com)
@@ -22,27 +28,34 @@ PABLO_T=$(bun scripts/clerk.mjs token pablo+clerk_test@example.com)
 TOMAS=22222222-2222-4222-8222-222222222222; JUANA=11111111-1111-4111-8111-111111111111
 
 check "evento sin sesión"      "$(curl -s -o /dev/null -w '%{http_code}' -H 'content-type: application/json' -d '{}' "$B/api/eventos")" 401
-check "evento de un padre"     "$(ev "$ANA_T" "{\"eventId\":\"$(uuid)\",\"tipo\":\"nivel_iniciado\",\"area\":\"medicina\",\"nivel\":1}")" 401
-check "área inexistente"       "$(ev "$TOMAS_T" "{\"eventId\":\"$(uuid)\",\"tipo\":\"nivel_iniciado\",\"area\":\"magia\",\"nivel\":1}")" 400
-check "nivel inexistente"      "$(ev "$TOMAS_T" "{\"eventId\":\"$(uuid)\",\"tipo\":\"nivel_iniciado\",\"area\":\"medicina\",\"nivel\":9}")" 400
-check "intento sin respuesta"  "$(ev "$TOMAS_T" "{\"eventId\":\"$(uuid)\",\"tipo\":\"intento\",\"area\":\"medicina\",\"nivel\":1}")" 400
-check "completado inventado"   "$(ev "$TOMAS_T" "{\"eventId\":\"$(uuid)\",\"tipo\":\"nivel_completado\",\"area\":\"medicina\",\"nivel\":1}")" 400
-check "eventId que no es UUID" "$(ev "$TOMAS_T" '{"eventId":"x","tipo":"nivel_iniciado","area":"medicina","nivel":1}')" 400
+check "evento de un padre"     "$(ev "$ANA_T" "$(uuid)" nivel_iniciado medicina 1)" 401
+check "área inexistente"       "$(ev "$TOMAS_T" "$(uuid)" nivel_iniciado magia 1)" 400
+check "nivel inexistente"      "$(ev "$TOMAS_T" "$(uuid)" nivel_iniciado medicina 9)" 400
+check "intento sin respuesta"  "$(ev "$TOMAS_T" "$(uuid)" intento medicina 1)" 400
+check "completado inventado"   "$(ev "$TOMAS_T" "$(uuid)" nivel_completado medicina 1)" 400
+check "eventId que no es UUID" "$(ev "$TOMAS_T" x nivel_iniciado medicina 1)" 400
 
-antes=$(sql "select coalesce(sum(completados), 0) from progreso_area where alumno_id = '$TOMAS' and area = 'medicina'")
+# Los intentos se cuentan siempre, aunque el nivel ya esté completado: así la prueba no depende de lo que jugó Tomás.
+antes=$(sql "select coalesce(sum(intentos), 0) from progreso_area where alumno_id = '$TOMAS' and area = 'medicina'")
 DUP=$(uuid)
-ev "$TOMAS_T" "{\"eventId\":\"$(uuid)\",\"tipo\":\"nivel_iniciado\",\"area\":\"medicina\",\"nivel\":1}" >/dev/null
-check "el caso se completa" "$(ev "$TOMAS_T" "{\"eventId\":\"$DUP\",\"tipo\":\"intento\",\"area\":\"medicina\",\"nivel\":1,\"respuesta\":\"Resfrío\"}")" 202
-check "reenvío aceptado"    "$(ev "$TOMAS_T" "{\"eventId\":\"$DUP\",\"tipo\":\"intento\",\"area\":\"medicina\",\"nivel\":1,\"respuesta\":\"Resfrío\"}")" 202
+ev "$TOMAS_T" "$(uuid)" nivel_iniciado medicina 1 >/dev/null
+check "el caso acepta el intento" "$(ev "$TOMAS_T" "$DUP" intento medicina 1 '"respuesta":"Resfrío"')" 202
+check "reenvío aceptado"    "$(ev "$TOMAS_T" "$DUP" intento medicina 1 '"respuesta":"Resfrío"')" 202
 
 frus=$(sql "select count(*) from alertas where alumno_id = '$TOMAS' and tipo = 'frustracion'")
 for palabra in zzzz yyyy; do
-  ev "$TOMAS_T" "{\"eventId\":\"$(uuid)\",\"tipo\":\"intento\",\"area\":\"sistemas\",\"nivel\":1,\"respuesta\":\"$palabra\"}" >/dev/null
-  ev "$TOMAS_T" "{\"eventId\":\"$(uuid)\",\"tipo\":\"nivel_abandonado\",\"area\":\"sistemas\",\"nivel\":1}" >/dev/null
+  ev "$TOMAS_T" "$(uuid)" intento sistemas 1 "\"respuesta\":\"$palabra\"" >/dev/null
+  ev "$TOMAS_T" "$(uuid)" nivel_abandonado sistemas 1 >/dev/null
 done
 sleep 3
-check "el reenvío se contó una sola vez" "$(sql "select coalesce(sum(completados), 0) from progreso_area where alumno_id = '$TOMAS' and area = 'medicina'")" "$((antes + 1))"
+check "el reenvío se contó una sola vez" "$(sql "select coalesce(sum(intentos), 0) from progreso_area where alumno_id = '$TOMAS' and area = 'medicina'")" "$((antes + 1))"
 check "alerta de frustración" "$(sql "select count(*) from alertas where alumno_id = '$TOMAS' and tipo = 'frustracion'")" "$((frus + 1))"
+
+hecho=$(sql "select greatest(
+  (select coalesce(max(nivel), 0) from partida where alumno_id = '$TOMAS' and area = 'derecho' and (estado->>'completado')::boolean),
+  (select coalesce(max(nivel_max), 0) from progreso_area where alumno_id = '$TOMAS' and area = 'derecho'))")
+[ "$hecho" -ge 2 ] && esperado=202 || esperado=403
+check "nivel 3 solo si se completó el 2" "$(ev "$TOMAS_T" "$(uuid)" nivel_iniciado derecho 3)" "$esperado"
 
 check "Ana ve a Tomás"        "$(pagina "$ANA_T" "$B/tutor?alumno=$TOMAS")" 200
 check "Pablo no ve a Juana"   "$(pagina "$PABLO_T" "$B/tutor?alumno=$JUANA")" 404
