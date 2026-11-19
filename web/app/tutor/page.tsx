@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { exigirRol } from '@/lib/auth';
@@ -5,6 +6,8 @@ import { AREAS } from '@/lib/contenido';
 import { db } from '@/lib/db';
 import { alumnosDe } from '@/lib/vinculos';
 import { Refrescar } from './Refrescar';
+
+export const metadata: Metadata = { title: 'Recorrido' };
 
 const ZONA = 'America/Argentina/Buenos_Aires';
 const DIAS = 14;
@@ -20,7 +23,13 @@ const nombreArea = (slug: string) => AREAS.find((a) => a.slug === slug)?.nombre 
 export default async function Dashboard({ searchParams }: { searchParams: Promise<{ alumno?: string }> }) {
   const adulto = await exigirRol(['padre', 'profesor']);
   const alumnos = await alumnosDe(adulto);
-  if (alumnos.length === 0) return <p>Todavía no tenés alumnos vinculados.</p>;
+  if (alumnos.length === 0) {
+    return (
+      <section className="tarjeta angosta">
+        <h1>Todavía no tenés alumnos vinculados</h1>
+      </section>
+    );
+  }
 
   const pedido = (await searchParams).alumno ?? alumnos[0].id;
   const alumno = alumnos.find((a) => a.id === pedido);
@@ -160,7 +169,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
               <span className="icono" aria-hidden>{a.tipo === 'interes' ? '★' : '!'}</span>
               <div>
                 <strong>{a.tipo === 'interes' ? 'Descubrió un interés' : 'Señal de frustración'}</strong>
-                <span className="tenue"> · {new Date(a.creada).toLocaleString('es-AR', { timeZone: ZONA, dateStyle: 'short', timeStyle: 'short' })}</span>
+                <span className="tenue"> · {new Date(a.creada).toLocaleString('es-AR', { timeZone: ZONA, dateStyle: 'short', timeStyle: 'short', hourCycle: 'h23' })}</span>
                 <p>{alumno.nombre} {a.mensaje}</p>
               </div>
             </li>

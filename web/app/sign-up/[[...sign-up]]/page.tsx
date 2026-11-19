@@ -1,8 +1,11 @@
 import { SignUp } from '@clerk/nextjs';
+import type { Metadata } from 'next';
 
-export default function PaginaAlta() {
+export const metadata: Metadata = { title: 'Crear cuenta' };
+
+export default function PaginaRegistro() {
   return (
-    <section className="login clerk">
+    <section className="clerk">
       <SignUp />
     </section>
   );
