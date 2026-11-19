@@ -5,14 +5,15 @@ type Entrada = { texto: string; rareza: Rareza };
 export type Aceptada = { texto: string; rareza: Rareza };
 export type EstadoBajada = { completado: boolean; aceptadas: Aceptada[] };
 
-type Nivel = { titulo: string; consigna: string; ejemplo: string; meta: number; exige?: 'comun'; banco: Entrada[] };
+// noObvias: cuántas de las respuestas tienen que ser comunes o raras.
+type Nivel = { titulo: string; consigna: string; ejemplo: string; meta: number; noObvias?: number; banco: Entrada[] };
 
 // Cada entrada acepta variantes separadas por «|». La primera es la que se muestra.
 const entrada = (rareza: Rareza, textos: string[]): Entrada[] => textos.map((texto) => ({ texto, rareza }));
 
 // Obvia: lo que dice casi todo el mundo. Común: hace falta pensarlo un poco. Rara: vocabulario de la profesión.
 // Las raras suman y se festejan, pero ningún nivel las exige: el juego mide la exploración, no lo que ya se sabe.
-// La dificultad sube por la cantidad de respuestas, por exigir una común y por consignas menos cotidianas.
+// La dificultad sube por la cantidad de respuestas, por cuántas no pueden ser obvias y por consignas menos cotidianas.
 export const NIVELES: Nivel[] = [
   {
     titulo: 'Adentro de un servidor', meta: 3, ejemplo: 'disco',
@@ -33,7 +34,7 @@ export const NIVELES: Nivel[] = [
     ],
   },
   {
-    titulo: '¿Por qué anda lenta?', meta: 3, exige: 'comun', ejemplo: 'mala conexión',
+    titulo: '¿Por qué anda lenta?', meta: 3, noObvias: 1, ejemplo: 'mala conexión',
     consigna: 'Nombrá por qué una app o un juego online se puede poner lento.',
     banco: [
       ...entrada('obvia', ['mala conexión|internet lento|internet|mal internet|conexion lenta|conexion', 'mal wifi|wifi|wifi lento', 'mucha gente|muchos usuarios|muchas personas|muchos jugadores|demasiados usuarios', 'celular viejo|computadora vieja|compu vieja|pc vieja|dispositivo viejo', 'virus|malware', 'poca memoria|poca ram|memoria llena|falta de memoria', 'almacenamiento lleno|disco lleno|sin espacio|poco espacio', 'muchas apps abiertas|demasiadas pestañas|muchas pestañas|muchos programas abiertos', 'descargas|actualizacion|actualizando', 'se colgó|se tildo|colgado|tildado']),
@@ -42,7 +43,7 @@ export const NIVELES: Nivel[] = [
     ],
   },
   {
-    titulo: 'La base de un delivery', meta: 4, exige: 'comun', ejemplo: 'pedidos',
+    titulo: 'La base de un delivery', meta: 4, noObvias: 1, ejemplo: 'pedidos',
     consigna: 'Nombrá algo que una app de delivery tiene que guardar en su base de datos.',
     banco: [
       ...entrada('obvia', ['pedidos|ordenes', 'clientes|usuarios', 'direcciones|domicilio', 'restaurantes|locales|negocios|comercios', 'comidas|platos|productos|menu|carta', 'precios', 'repartidores|cadetes', 'nombres', 'teléfonos|celular|numero de telefono', 'tarjetas|tarjeta de credito']),
@@ -51,7 +52,7 @@ export const NIVELES: Nivel[] = [
     ],
   },
   {
-    titulo: 'Entradas para un recital', meta: 4, exige: 'comun', ejemplo: 'se cae la página',
+    titulo: 'Entradas para un recital', meta: 4, noObvias: 1, ejemplo: 'se cae la página',
     consigna: 'Nombrá algo que puede salir mal cuando miles de personas compran entradas para un recital al mismo tiempo.',
     banco: [
       ...entrada('obvia', ['se cae la página|se cae|se cayo|la pagina se cae|pagina caida|caida|se cae la app|se cae la web', 'se agotan las entradas|se agotan|agotado|sin entradas|no hay entradas', 'tarda mucho|lenta|pagina lenta|lentitud|anda lento|carga lenta', 'fila virtual|fila|cola|cola de espera|mucha espera|espera', 'da error|error|errores|no carga|no anda', 'falla el pago|no te deja pagar|error en el pago|pago rechazado|rechazan la tarjeta']),
@@ -60,12 +61,39 @@ export const NIVELES: Nivel[] = [
     ],
   },
   {
-    titulo: 'Antes de lanzar', meta: 5, exige: 'comun', ejemplo: 'probarla',
+    titulo: 'Antes de lanzar', meta: 5, noObvias: 1, ejemplo: 'probarla',
     consigna: 'Nombrá algo que hace un equipo de programadores antes de lanzar una actualización de su app.',
     banco: [
       ...entrada('obvia', ['probarla|probar|pruebas|hacer pruebas|testear|tests|testing', 'revisarla|revisar|revisar todo|chequear|controlar', 'arreglar errores|arreglar bugs|corregir errores|arreglar|corregir|bugs|errores|debuggear', 'avisar a los usuarios|avisar|anunciar|comunicar', 'guardar los cambios|guardar|guardar todo', 'programar|escribir codigo|codear', 'diseñar|diseño', 'reunirse|reunion|reuniones']),
       ...entrada('comun', ['revisión de código|revisar el codigo|code review|que otro revise el codigo', 'probar en varios celulares|varios celulares|distintos celulares|probar en distintos dispositivos|varios dispositivos|distintos dispositivos|probar en iphone y android|iphone y android', 'backup|copia de seguridad|backup de la base|respaldo', 'versión beta|beta|beta testers|probadores', 'escribir las novedades|novedades|notas de la version|changelog|lista de cambios', 'documentar|documentacion', 'pedir opiniones|feedback|encuesta|preguntar a usuarios', 'demo|mostrar|presentar', 'checklist|lista de control', 'planificar|planear|plan|planificacion', 'subir a la tienda|aprobar en la tienda|play store|app store|publicar en la tienda', 'merge|unir cambios|juntar el codigo', 'entorno de prueba|staging|ambiente de pruebas|servidor de prueba', 'control de calidad|qa', 'linter|formatear', 'medir el rendimiento|rendimiento|velocidad|optimizar', 'revisar la seguridad|seguridad|chequear seguridad', 'número de versión|versionar|version']),
       ...entrada('rara', ['canary|canario|prueba canario', 'feature flags|feature flag', 'lanzamiento gradual|rollout|rollout gradual|de a poco', 'smoke test', 'blue green', 'dark launch', 'migración de la base|migracion|migraciones', 'integración continua|ci|pipeline|ci cd', 'monitoreo|observabilidad|monitorear|metricas', 'rollback|volver atras|plan de vuelta atras', 'tests automáticos|pruebas automaticas|tests unitarios|unit tests']),
+    ],
+  },
+  {
+    titulo: 'Un juego online', meta: 5, noObvias: 2, ejemplo: 'servidores',
+    consigna: 'Nombrá algo que necesita un juego online para que miles de personas jueguen al mismo tiempo.',
+    banco: [
+      ...entrada('obvia', ['servidores|servidor|servers', 'internet|buena conexion|conexion', 'cuentas|usuarios|registrarse|login|iniciar sesion', 'partidas|salas|lobby', 'mapas|niveles|mundos', 'chat|chat de voz|chatear', 'personajes|skins|avatares', 'actualizaciones|parches|updates', 'tienda|compras|monedas', 'amigos|lista de amigos']),
+      ...entrada('comun', ['base de datos', 'buscar rivales|emparejar jugadores|buscar partida|emparejamiento', 'ranking|rankings|clasificacion|tabla de posiciones|ranked', 'antitrampas|anticheat|anti trampas|detectar trampas|evitar trampas', 'moderadores|moderacion|reportar jugadores|reportes', 'guardar el progreso|guardar partidas|guardado en la nube|progreso', 'servidores en varios países|regiones|servidores por region|servidores cerca', 'poco lag|baja latencia|ping bajo|que no haya lag', 'sincronizar a los jugadores|sincronizar|sincronizacion|sincronizar posiciones', 'mantenimiento', 'proteger las cuentas|seguridad|proteger cuentas', 'soporte|atencion al cliente|ayuda', 'torneos|eventos|temporadas', 'más servidores cuando hay mucha gente|agregar servidores|mas servidores']),
+      ...entrada('rara', ['matchmaking', 'balanceador de carga|balanceador|load balancer', 'autoescalado|escalado automatico|escalar|escalabilidad', 'tick rate|tickrate', 'netcode', 'predicción del cliente|prediccion|client side prediction', 'cdn', 'replicación|replicar', 'udp', 'websockets|socket', 'servidor autoritativo|autoritativo', 'sharding|shards|particiones', 'caché', 'cola de mensajes|colas']),
+    ],
+  },
+  {
+    titulo: 'La app del banco', meta: 6, noObvias: 2, ejemplo: 'contraseña',
+    consigna: 'Nombrá algo que una app de banco tiene que hacer para que nadie te robe la plata.',
+    banco: [
+      ...entrada('obvia', ['contraseña|clave|contraseña segura|pin', 'huella|huella digital|huella dactilar', 'reconocimiento facial|cara|face id|foto de la cara', 'cerrar sesión|cerrar la sesion|logout', 'avisar cada movimiento|avisar movimientos|notificaciones|avisos|avisar cada compra|mandar un mail', 'antivirus', 'no compartir la clave|no compartir la contraseña|no dar la clave|no pasar la contraseña', 'usuario|nombre de usuario']),
+      ...entrada('comun', ['verificación en dos pasos|verificacion en 2 pasos|2 pasos|doble factor|dos pasos|segundo factor|2fa|doble autenticacion', 'código por SMS|codigo por mensaje|codigo al celular|sms', 'token|token de seguridad|clave token', 'bloquear después de varios intentos|bloquear la cuenta|bloqueo|limitar intentos', 'límite de transferencias|limites|tope de transferencia|monto maximo', 'detectar fraude|detectar movimientos raros|antifraude|fraude', 'confirmar las transferencias|confirmar transferencias|confirmacion|pedir confirmacion', 'cerrar la sesión si no la usás|cerrar sesion por inactividad|tiempo de sesion|sesion que expira|timeout', 'conexión segura|https|candado', 'captcha|no soy un robot', 'avisar de estafas|alertas de phishing|phishing', 'actualizaciones de seguridad|actualizar la app', 'preguntas de seguridad', 'celular de confianza|registrar el celular|dispositivo de confianza|vincular dispositivo']),
+      ...entrada('rara', ['cifrado|encriptar|encriptacion|cifrar', 'hash de contraseñas|hash|hashear contraseñas|contraseñas hasheadas', 'auditoría|logs|registros', 'tls|ssl|certificados', 'firma digital', 'biometría|biometria|biometrico', 'ofuscar el código|ofuscacion|ofuscar', 'detectar root|root|jailbreak', 'otp|clave de un solo uso', 'rate limit', 'pentest|test de penetracion|hackeo etico', 'mínimo privilegio|minimo privilegio', 'tokenización|tokenizacion|tokenizar']),
+    ],
+  },
+  {
+    titulo: 'Se cayó todo', meta: 6, noObvias: 3, ejemplo: 'buscar el error',
+    consigna: 'Nombrá algo que hace un equipo cuando su app se cae un viernes a la noche.',
+    banco: [
+      ...entrada('obvia', ['buscar el error|buscar el problema|ver que paso|investigar', 'arreglarlo|arreglar|solucionarlo|corregir', 'reiniciar el servidor|reiniciar|apagar y prender|resetear', 'avisar a los usuarios|avisar|comunicar|publicar un aviso', 'llamar al equipo|llamar al jefe|llamar a todos|reunirse|juntarse', 'probar que ande|probar|testear', 'pedir disculpas|pedir perdon|disculparse', 'quedarse trabajando|trabajar de noche|no dormir']),
+      ...entrada('comun', ['revisar los logs|logs|mirar los logs|registros', 'volver a la versión anterior|version anterior|deshacer el cambio|volver atras', 'revisar el último cambio|ultimo cambio|que se cambio', 'mirar las métricas|metricas|graficos|monitoreo|monitorear', 'agregar servidores|mas servidores|escalar', 'restaurar el backup|backup|copia de seguridad|restaurar', 'persona de guardia|guardia|on call|el que esta de guardia', 'página de estado|pagina de estado|status|estado del servicio', 'escribir qué pasó|informe|reporte|documentar', 'revisar la base de datos|base de datos', 'avisar al proveedor|llamar a la nube|soporte de la nube', 'apagar la función nueva|desactivar una funcion|apagar la funcion|desactivar', 'decidir qué arreglar primero|priorizar', 'revisar el servidor|servidor']),
+      ...entrada('rara', ['rollback', 'post mortem|postmortem|retrospectiva', 'alertas|alerting', 'feature flags|feature flag', 'runbook|manual de incidentes|playbook', 'gestión de incidentes|incidente|comandante de incidente', 'sla|slo', 'failover|servidor de respaldo|pasar al servidor de respaldo', 'hotfix|parche urgente', 'causa raíz|causa raiz|root cause', 'tracing|trazas', 'circuit breaker', 'volver a desplegar|redeploy|desplegar de nuevo']),
     ],
   },
 ];
@@ -129,9 +157,9 @@ export function buscar(banco: Entrada[], respuesta: string) {
 
 export const estadoBajada = (): EstadoBajada => ({ completado: false, aceptadas: [] });
 
-// «Una común» se cumple con una común o con una rara: lo que importa es que no sean todas obvias.
+// Una común o una rara cuentan igual para noObvias: lo que importa es que no sean todas obvias.
 const cumple = (aceptadas: Aceptada[], datos: Nivel) =>
-  aceptadas.length >= datos.meta && (!datos.exige || aceptadas.some((a) => a.rareza !== 'obvia'));
+  aceptadas.length >= datos.meta && aceptadas.filter((a) => a.rareza !== 'obvia').length >= (datos.noObvias ?? 0);
 
 export function intentarBajada(nivel: number, respuesta: string, estado: EstadoBajada) {
   const datos = NIVELES[nivel - 1];
@@ -143,14 +171,14 @@ export function intentarBajada(nivel: number, respuesta: string, estado: EstadoB
   if (!entradaBanco) {
     return {
       publicar: false, completado: false, estado,
-      cuerpo: { enBanco: false, acierto: false, aceptadas: estado.aceptadas, completado: estado.completado, falta: datos.exige ?? null },
+      cuerpo: { enBanco: false, acierto: false, aceptadas: estado.aceptadas, completado: estado.completado },
     };
   }
   const texto = mostrar(entradaBanco);
   if (estado.aceptadas.some((a) => a.texto === texto)) {
     return {
       publicar: false, completado: false, estado,
-      cuerpo: { enBanco: true, repetida: true, texto, acierto: false, aceptadas: estado.aceptadas, completado: estado.completado, falta: datos.exige ?? null },
+      cuerpo: { enBanco: true, repetida: true, texto, acierto: false, aceptadas: estado.aceptadas, completado: estado.completado },
     };
   }
   const aceptadas = [...estado.aceptadas, { texto, rareza: entradaBanco.rareza }];
@@ -164,7 +192,6 @@ export function intentarBajada(nivel: number, respuesta: string, estado: EstadoB
     estado: siguiente,
     cuerpo: {
       enBanco: true, acierto: true, texto, rareza: entradaBanco.rareza, aceptadas, completado: siguiente.completado,
-      falta: cumple(aceptadas, datos) ? null : (datos.exige ?? null),
     },
   };
 }

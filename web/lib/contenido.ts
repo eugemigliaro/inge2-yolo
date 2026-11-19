@@ -39,7 +39,7 @@ export function vistaNivel(slug: string, nivel: number) {
   if (a.juegoId === 'caso') return { juego: 'caso' as const, catalogo: opcionesDe(nivel).map((d) => d.nombre), nuevos: nuevosEn(nivel) };
   if (a.juegoId === 'bajada') {
     const nivelBajada = BAJADAS[nivel - 1];
-    return { juego: 'bajada' as const, consigna: nivelBajada.consigna, ejemplo: nivelBajada.ejemplo, exige: nivelBajada.exige ?? null, tamano: nivelBajada.banco.length, paraCompletar: nivelBajada.meta };
+    return { juego: 'bajada' as const, consigna: nivelBajada.consigna, ejemplo: nivelBajada.ejemplo, noObvias: nivelBajada.noObvias ?? 0, tamano: nivelBajada.banco.length, paraCompletar: nivelBajada.meta };
   }
   return { juego: 'tablero' as const, ...vistaTablero(nivel) };
 }

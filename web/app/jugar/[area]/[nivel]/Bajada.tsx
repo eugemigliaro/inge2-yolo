@@ -18,9 +18,9 @@ function resumen(aceptadas: Aceptada[]) {
 
 const Etiqueta = ({ rareza }: { rareza: Rareza }) => <span className={`etiqueta-rareza ${rareza}`}>{RAREZA[rareza]}</span>;
 
-export function Bajada({ area, areaNombre, nivel, totalNiveles, titulo, consigna, ejemplo, exige, tamano, paraCompletar, inicial }: {
+export function Bajada({ area, areaNombre, nivel, totalNiveles, titulo, consigna, ejemplo, noObvias, tamano, paraCompletar, inicial }: {
   area: string; areaNombre: string; nivel: number; totalNiveles: number; titulo: string; consigna: string; ejemplo: string;
-  exige: Rareza | null; tamano: number; paraCompletar: number;
+  noObvias: number; tamano: number; paraCompletar: number;
   inicial: { completado: boolean; aceptadas: Aceptada[] };
 }) {
   const salir = useNivel(area, nivel, inicial.completado);
@@ -56,7 +56,7 @@ export function Bajada({ area, areaNombre, nivel, totalNiveles, titulo, consigna
   }
 
   const llenas = Math.min(aceptadas.length, paraCompletar);
-  const noObvia = aceptadas.some((a) => a.rareza !== 'obvia');
+  const hechas = Math.min(aceptadas.filter((a) => a.rareza !== 'obvia').length, noObvias);
 
   return (
     <section className="tarjeta juego juego-area tono-sistemas bajada">
@@ -86,9 +86,10 @@ export function Bajada({ area, areaNombre, nivel, totalNiveles, titulo, consigna
               {Array.from({ length: paraCompletar }, (_, i) => <span key={i} className={i < llenas ? 'lleno' : undefined} />)}
             </span>
             <span>{aceptadas.length} de {paraCompletar}</span>
-            {exige && (
-              <span className={`requisito${noObvia ? ' hecho' : ''}`}>
-                {noObvia ? '✓' : '○'} Al menos una que no sea obvia
+            {noObvias > 0 && (
+              <span className={`requisito${hechas === noObvias ? ' hecho' : ''}`}>
+                {hechas === noObvias ? '✓' : '○'}{' '}
+                {noObvias === 1 ? 'Al menos una que no sea obvia' : `Al menos ${noObvias} que no sean obvias (${hechas} de ${noObvias})`}
               </span>
             )}
           </div>

@@ -30,7 +30,7 @@ TOMAS=22222222-2222-4222-8222-222222222222; JUANA=11111111-1111-4111-8111-111111
 check "evento sin sesión"      "$(curl -s -o /dev/null -w '%{http_code}' -H 'content-type: application/json' -d '{}' "$B/api/eventos")" 401
 check "evento de un padre"     "$(ev "$ANA_T" "$(uuid)" nivel_iniciado medicina 1)" 401
 check "área inexistente"       "$(ev "$TOMAS_T" "$(uuid)" nivel_iniciado magia 1)" 400
-check "nivel inexistente"      "$(ev "$TOMAS_T" "$(uuid)" nivel_iniciado medicina 9)" 400
+check "nivel inexistente"      "$(ev "$TOMAS_T" "$(uuid)" nivel_iniciado medicina 10)" 400
 check "intento sin respuesta"  "$(ev "$TOMAS_T" "$(uuid)" intento medicina 1)" 400
 check "completado inventado"   "$(ev "$TOMAS_T" "$(uuid)" nivel_completado medicina 1)" 400
 check "eventId que no es UUID" "$(ev "$TOMAS_T" x nivel_iniciado medicina 1)" 400
