@@ -1,12 +1,11 @@
 'use client';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState, type FormEvent } from 'react';
-import type { Ficha } from '@/lib/juegos/caso';
+import { useId, useState, type FormEvent, type KeyboardEvent } from 'react';
+import type { EstadoCaso, Ficha } from '@/lib/juegos/caso';
 import { normalizar } from '@/lib/texto';
-import { enviar } from './cliente';
+import { enviar, useNivel } from './cliente';
 
-type Intento = { nombre: string; fichas: Ficha[]; acierto: boolean };
+type Intento = EstadoCaso['intentos'][number];
 
 const TIPS: Record<string, { texto: string; flechas?: boolean }> = {
   Sistema: { texto: 'El aparato del cuerpo. Verde si es el mismo que el del cuadro escondido.' },
@@ -20,57 +19,63 @@ const TIPS: Record<string, { texto: string; flechas?: boolean }> = {
 
 export function Caso({ area, areaNombre, nivel, totalNiveles, titulo, catalogo, inicial }: {
   area: string; areaNombre: string; nivel: number; totalNiveles: number; titulo: string;
-  catalogo: string[]; inicial: Intento[];
+  catalogo: string[]; inicial: EstadoCaso;
 }) {
-  const router = useRouter();
-  const iniciado = useRef(false);
+  const salir = useNivel(area, nivel, inicial.completado);
+  const lista = useId();
   const [texto, setTexto] = useState('');
   const [abierto, setAbierto] = useState(false);
-  const [intentos, setIntentos] = useState<Intento[]>(inicial);
+  const [activa, setActiva] = useState(-1);
+  // El más reciente arriba. El servidor los guarda en orden de llegada.
+  const [intentos, setIntentos] = useState<Intento[]>(() => [...inicial.intentos].reverse());
   const [aviso, setAviso] = useState('');
-  const [fin, setFin] = useState(inicial.some((i) => i.acierto));
+  const [fin, setFin] = useState(inicial.completado);
   const [ocupado, setOcupado] = useState(false);
   const [pista, setPista] = useState('Urgencia');
-
-  useEffect(() => {
-    if (iniciado.current) return;
-    iniciado.current = true;
-    void enviar({ tipo: 'nivel_iniciado', area, nivel });
-  }, [area, nivel]);
 
   const ideas = texto.trim().length === 0 ? [] : catalogo.filter((nombre) => {
     const clave = normalizar(nombre);
     return clave.includes(normalizar(texto)) && !intentos.some((i) => normalizar(i.nombre) === clave);
   }).slice(0, 6);
+  const mostrarIdeas = abierto && ideas.length > 0;
 
   async function probar(respuesta: string) {
     if (ocupado || fin || !respuesta.trim()) return;
     setOcupado(true);
     setAbierto(false);
-    const { data } = await enviar({ tipo: 'intento', area, nivel, respuesta });
+    const { data, error } = await enviar({ tipo: 'intento', area, nivel, respuesta });
     setOcupado(false);
+    if (error) {
+      setAviso(error);
+      return;
+    }
     if (data.enCatalogo === false) {
       setAviso('Ese diagnóstico no está en el catálogo. No gasta un intento.');
       return;
     }
-    if (data.fichas) {
-      setIntentos((prev) => [{ nombre: respuesta.trim(), fichas: data.fichas as Ficha[], acierto: Boolean(data.acierto) }, ...prev]);
-      setTexto('');
-      setAviso('');
-      const fichas = data.fichas as Ficha[];
-      setPista(fichas.find((f) => f.resultado !== 'igual')?.nombre ?? 'Urgencia');
-    }
+    const fichas = data.fichas as Ficha[];
+    setIntentos((prev) => [{ nombre: String(data.nombre), fichas, acierto: Boolean(data.acierto) }, ...prev]);
+    setTexto('');
+    setAviso('');
+    setPista(fichas.find((f) => f.resultado !== 'igual')?.nombre ?? 'Urgencia');
     if (data.completado) setFin(true);
   }
 
   function enviarFormulario(e: FormEvent) {
     e.preventDefault();
-    void probar(texto);
+    void probar(activa >= 0 && mostrarIdeas ? ideas[activa] : texto);
   }
 
-  async function abandonar() {
-    await enviar({ tipo: 'nivel_abandonado', area, nivel });
-    router.push('/jugar');
+  function teclas(e: KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Escape') {
+      setAbierto(false);
+      setActiva(-1);
+      return;
+    }
+    if (!ideas.length || (e.key !== 'ArrowDown' && e.key !== 'ArrowUp')) return;
+    e.preventDefault();
+    setAbierto(true);
+    setActiva((i) => (e.key === 'ArrowDown' ? (i + 1) % ideas.length : (i <= 0 ? ideas.length : i) - 1));
   }
 
   const tip = TIPS[pista] ?? TIPS.Urgencia;
@@ -80,7 +85,7 @@ export function Caso({ area, areaNombre, nivel, totalNiveles, titulo, catalogo, 
       <p className="caso-meta">{areaNombre} · El caso · Nivel {nivel}: {titulo}</p>
       <div className="caso-tope">
         <h1>{fin ? 'Encontraste el cuadro' : '¿Qué cuadro es?'}</h1>
-        <p>Intento {fin ? intentos.length : intentos.length + 1}</p>
+        <p>{fin ? `En ${intentos.length} ${intentos.length === 1 ? 'intento' : 'intentos'}` : `Intento ${intentos.length + 1}`}</p>
       </div>
       {fin ? (
         <div className="acciones">
@@ -91,18 +96,32 @@ export function Caso({ area, areaNombre, nivel, totalNiveles, titulo, catalogo, 
         <form className="caso-buscar" onSubmit={enviarFormulario} autoComplete="off">
           <input
             value={texto}
-            onChange={(e) => { setTexto(e.target.value); setAbierto(true); setAviso(''); }}
+            onChange={(e) => { setTexto(e.target.value); setAbierto(true); setActiva(-1); setAviso(''); }}
             onFocus={() => setAbierto(true)}
+            onBlur={() => setAbierto(false)}
+            onKeyDown={teclas}
             placeholder="Escribí un diagnóstico"
             aria-label="Diagnóstico"
+            role="combobox"
+            aria-expanded={mostrarIdeas}
+            aria-controls={lista}
+            aria-autocomplete="list"
+            aria-activedescendant={mostrarIdeas && activa >= 0 ? `${lista}-${activa}` : undefined}
           />
-          <button className="caso-lupa" disabled={ocupado} aria-label="Probar">⌕</button>
-          {abierto && ideas.length > 0 && (
-            <ul className="caso-ideas">
-              {ideas.map((nombre) => (
-                <li key={nombre}>
-                  <button type="button" onClick={() => void probar(nombre)}>{nombre}</button>
-                </li>
+          <button className="caso-lupa" disabled={ocupado} aria-label="Probar">
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" strokeWidth="2.2" /><path d="m15.5 15.5 5 5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /></svg>
+          </button>
+          {mostrarIdeas && (
+            <ul className="caso-ideas" id={lista} role="listbox" aria-label="Diagnósticos del catálogo">
+              {ideas.map((nombre, i) => (
+                <li
+                  key={nombre}
+                  id={`${lista}-${i}`}
+                  role="option"
+                  aria-selected={i === activa}
+                  className={i === activa ? 'activa' : undefined}
+                  onMouseDown={(e) => { e.preventDefault(); void probar(nombre); }}
+                >{nombre}</li>
               ))}
             </ul>
           )}
@@ -111,7 +130,7 @@ export function Caso({ area, areaNombre, nivel, totalNiveles, titulo, catalogo, 
       {aviso && <p className="caso-aviso" role="status">{aviso}</p>}
       <div className="caso-historial">
         {intentos.map((intento, i) => (
-          <article key={`${intento.nombre}-${i}`} className="caso-carta">
+          <article key={`${intento.nombre}-${intentos.length - i}`} className={`caso-carta${intento.acierto ? ' acierto' : ''}`}>
             <h2>{intento.nombre}</h2>
             <div className="caso-fichas">
               {intento.fichas.map((f) => (
@@ -119,6 +138,7 @@ export function Caso({ area, areaNombre, nivel, totalNiveles, titulo, catalogo, 
                   key={f.nombre}
                   type="button"
                   className={`caso-ficha ${f.resultado} ${pista === f.nombre ? 'activa' : ''}`}
+                  aria-pressed={pista === f.nombre}
                   onClick={() => setPista(f.nombre)}
                 >
                   <span>{f.nombre}</span>
@@ -143,7 +163,7 @@ export function Caso({ area, areaNombre, nivel, totalNiveles, titulo, catalogo, 
       </aside>
       {!fin && (
         <div className="acciones">
-          <button type="button" className="boton secundario" onClick={abandonar}>Salir del nivel</button>
+          <button type="button" className="boton secundario" onClick={salir}>Salir del nivel</button>
         </div>
       )}
     </section>

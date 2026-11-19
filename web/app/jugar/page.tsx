@@ -1,12 +1,14 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { exigirRol } from '@/lib/auth';
 import { AREAS } from '@/lib/contenido';
-import { db } from '@/lib/db';
+import { nivelesCompletados } from '@/lib/progreso';
+
+export const metadata: Metadata = { title: 'Sala de juegos' };
 
 export default async function Sala() {
   const u = await exigirRol('alumno');
-  const { rows } = await db.query('select area, nivel_max from progreso_area where alumno_id = $1', [u.id]);
-  const completado = Object.fromEntries(rows.map((r) => [r.area, r.nivel_max as number]));
+  const completado = await nivelesCompletados(u.id);
 
   return (
     <>
@@ -24,11 +26,13 @@ export default async function Sala() {
                 const nivel = i + 1;
                 const hecho = nivel <= (completado[a.slug] ?? 0);
                 const abierto = nivel <= (completado[a.slug] ?? 0) + 1;
+                const estado = hecho ? 'hecho' : abierto ? 'abierto' : 'bloqueado';
+                const contenido = <><span className="marca" aria-hidden /><span>Nivel {nivel}: {n.titulo}</span></>;
                 return (
-                  <li key={nivel}>
+                  <li key={nivel} className={`nivel nivel-${estado}`}>
                     {abierto
-                      ? <Link href={`/jugar/${a.slug}/${nivel}`}>{hecho ? '✓' : '▶'} Nivel {nivel}: {n.titulo}</Link>
-                      : <span className="tenue">🔒 Nivel {nivel}: {n.titulo}</span>}
+                      ? <Link href={`/jugar/${a.slug}/${nivel}`} aria-label={`Nivel ${nivel}: ${n.titulo}${hecho ? ', completado' : ''}`}>{contenido}</Link>
+                      : <span aria-label={`Nivel ${nivel}: ${n.titulo}, bloqueado`}>{contenido}</span>}
                   </li>
                 );
               })}

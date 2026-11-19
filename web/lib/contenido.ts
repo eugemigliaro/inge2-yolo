@@ -22,7 +22,7 @@ export const AREAS: Area[] = [
   },
   {
     slug: 'derecho', nombre: 'Derecho', juego: 'El tablero', juegoId: 'tablero',
-    descripcion: 'Arrastrá cada situación hasta su estante. Las opciones están de un lado y los estantes del otro.',
+    descripcion: 'Llevá cada situación a su estante: arrastrala, o tocala y después tocá el estante.',
     niveles: [
       { titulo: 'Tres casos claros' },
       { titulo: 'Uno por estante' },

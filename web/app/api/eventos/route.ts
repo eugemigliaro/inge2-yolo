@@ -6,6 +6,7 @@ import { intentarCaso, type EstadoCaso } from '@/lib/juegos/caso';
 import { intentarTablero, type EstadoTablero } from '@/lib/juegos/tablero';
 import { db } from '@/lib/db';
 import { publicar } from '@/lib/kafka';
+import { desbloqueado, nivelesCompletados } from '@/lib/progreso';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 type Tipo = 'nivel_iniciado' | 'intento' | 'nivel_abandonado';
@@ -49,6 +50,11 @@ export async function POST(req: Request) {
       return Response.json(ya.rows[0].respuesta, { status: ya.rows[0].status });
     }
 
+    if (!desbloqueado(await nivelesCompletados(u.id, cx), area.slug, nivel)) {
+      await cx.query('rollback');
+      return Response.json({ error: 'Nivel bloqueado' }, { status: 403 });
+    }
+
     const guardada = await cx.query('select estado from partida where alumno_id = $1 and area = $2 and nivel = $3 for update', [u.id, area.slug, nivel]);
     let estado = (guardada.rows[0]?.estado ?? estadoInicial(area.juegoId)) as EstadoPartida;
     const payloads: Evento[] = [];
@@ -58,6 +64,10 @@ export async function POST(req: Request) {
     if (tipo === 'nivel_iniciado') {
       payloads.push({ eventId: b.eventId, tipo, ...base });
       cuerpo = { ok: true };
+    } else if (tipo === 'nivel_abandonado' && estado.completado) {
+      // Un nivel completado no se abandona: borrar la partida lo volvería a bloquear.
+      cuerpo = { ok: true };
+      status = 200;
     } else if (tipo === 'nivel_abandonado') {
       payloads.push({ eventId: b.eventId, tipo, ...base });
       estado = estadoInicial(area.juegoId);
@@ -91,7 +101,7 @@ export async function POST(req: Request) {
       `insert into partida (alumno_id, area, nivel, estado) values ($1, $2, $3, $4)
        on conflict (alumno_id, area, nivel) do update set estado = excluded.estado`,
       [u.id, area.slug, nivel, JSON.stringify(estado)]);
-    if (tipo === 'nivel_abandonado') await cx.query('delete from partida where alumno_id = $1 and area = $2 and nivel = $3', [u.id, area.slug, nivel]);
+    if (tipo === 'nivel_abandonado' && status === 202) await cx.query('delete from partida where alumno_id = $1 and area = $2 and nivel = $3', [u.id, area.slug, nivel]);
     await cx.query('insert into eventos_salida (event_id, payloads, respuesta, status) values ($1, $2, $3, $4)', [b.eventId, JSON.stringify(payloads), JSON.stringify(cuerpo), status]);
     await cx.query('commit');
     await publicar(payloads);

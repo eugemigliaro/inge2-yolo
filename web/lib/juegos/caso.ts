@@ -81,6 +81,6 @@ export function intentarCaso(nivel: number, respuesta: string, estado: EstadoCas
     cerca,
     completado,
     estado: siguiente,
-    cuerpo: { enCatalogo: true, acierto, cerca, fichas, completado: siguiente.completado },
+    cuerpo: { enCatalogo: true, nombre: guess.nombre, acierto, cerca, fichas, completado: siguiente.completado },
   };
 }
