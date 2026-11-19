@@ -229,6 +229,8 @@ th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--bord
 .diagnostico:disabled:not(.acierto):not(.probando) { text-decoration: line-through; color: var(--texto-2); background: transparent; border-style: dashed; }
 .diagnostico.acierto { background: var(--bien); border-color: var(--bien); color: #fff; }
 .diagnostico.probando { background: color-mix(in srgb, var(--medicina) 20%, var(--superficie)); }
+.diagnostico { display: inline-flex; align-items: center; gap: 6px; }
+.nuevo { display: inline-block; padding: 1px 6px; border-radius: 999px; background: var(--medicina); color: #fff; font-size: .68rem; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; vertical-align: middle; }
 .caso-historial { display: grid; gap: 12px; }
 .caso-carta { border: 1px solid var(--borde); background: var(--superficie); border-radius: 12px; padding: 12px; }
 .caso-carta.acierto { border: 2px solid var(--bien); }

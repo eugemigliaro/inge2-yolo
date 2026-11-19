@@ -16,9 +16,9 @@ function detalle(f: Ficha) {
 }
 
 // El alumno toca un diagnóstico de la lista y ve, dato por dato, en qué se parece al correcto.
-export function Caso({ area, areaNombre, nivel, totalNiveles, titulo, catalogo, inicial }: {
+export function Caso({ area, areaNombre, nivel, totalNiveles, titulo, catalogo, nuevos, inicial }: {
   area: string; areaNombre: string; nivel: number; totalNiveles: number; titulo: string;
-  catalogo: string[]; inicial: EstadoCaso;
+  catalogo: string[]; nuevos: string[]; inicial: EstadoCaso;
 }) {
   const salir = useNivel(area, nivel, inicial.completado);
   // El más reciente arriba. El servidor los guarda en orden de llegada.
@@ -79,20 +79,24 @@ export function Caso({ area, areaNombre, nivel, totalNiveles, titulo, catalogo, 
             </ul>
           </div>
 
-          <h2>Diagnósticos posibles</h2>
+          <h2>Diagnósticos posibles ({catalogo.length})</h2>
+          {nuevos.length > 0 && (
+            <p className="tenue">Este nivel suma {nuevos.length === 1 ? 'un diagnóstico nuevo' : `${nuevos.length} diagnósticos nuevos`}, marcados con <span className="nuevo">nuevo</span>.</p>
+          )}
           <div className="catalogo">
             {catalogo.map((nombre) => {
               const resultado = probados.get(normalizar(nombre));
               const ya = resultado !== undefined;
+              const esNuevo = nuevos.includes(nombre);
               return (
                 <button
                   key={nombre}
                   type="button"
                   className={`diagnostico${resultado ? ' acierto' : ''}${probando === nombre ? ' probando' : ''}`}
                   disabled={ya || probando !== null}
-                  aria-label={ya ? `${nombre}, ya probado` : `Probar ${nombre}`}
+                  aria-label={ya ? `${nombre}, ya probado` : `Probar ${nombre}${esNuevo ? ', nuevo en este nivel' : ''}`}
                   onClick={() => void probar(nombre)}
-                >{nombre}</button>
+                >{nombre}{esNuevo && !ya && <span className="nuevo" aria-hidden>nuevo</span>}</button>
               );
             })}
           </div>

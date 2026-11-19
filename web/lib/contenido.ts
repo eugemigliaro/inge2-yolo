@@ -1,4 +1,4 @@
-import { CATALOGO, estadoCaso, type EstadoCaso } from './juegos/caso';
+import { NIVELES as CASOS, estadoCaso, nuevosEn, opcionesDe, type EstadoCaso } from './juegos/caso';
 import { NIVELES as BAJADAS, PARA_COMPLETAR, estadoBajada, type EstadoBajada } from './juegos/bajada';
 import { NIVELES as TABLEROS, estadoTablero, vistaTablero, type EstadoTablero } from './juegos/tablero';
 
@@ -8,12 +8,8 @@ export type Area = { slug: string; nombre: string; juego: string; juegoId: Juego
 export const AREAS: Area[] = [
   {
     slug: 'medicina', nombre: 'Medicina', juego: 'El caso', juegoId: 'caso',
-    descripcion: 'Adiviná el diagnóstico del paciente. Cada intento te muestra en qué se parece al correcto.',
-    niveles: [
-      { titulo: 'Primer paciente' },
-      { titulo: 'Se parece a otros' },
-      { titulo: 'Una sola ficha distinta' },
-    ],
+    descripcion: 'Adiviná el diagnóstico del paciente. Cada intento te muestra en qué se parece al correcto, y cada nivel trae más opciones y más parecidas.',
+    niveles: CASOS.map((n) => ({ titulo: n.titulo })),
   },
   {
     slug: 'sistemas', nombre: 'Sistemas', juego: 'La bajada', juegoId: 'bajada',
@@ -40,7 +36,7 @@ export function estadoInicial(juego: JuegoId): EstadoPartida {
 export function vistaNivel(slug: string, nivel: number) {
   const a = area(slug);
   if (!a || nivel < 1 || nivel > a.niveles.length) return null;
-  if (a.juegoId === 'caso') return { juego: 'caso' as const, catalogo: CATALOGO.map((d) => d.nombre) };
+  if (a.juegoId === 'caso') return { juego: 'caso' as const, catalogo: opcionesDe(nivel).map((d) => d.nombre), nuevos: nuevosEn(nivel) };
   if (a.juegoId === 'bajada') {
     const nivelBajada = BAJADAS[nivel - 1];
     return { juego: 'bajada' as const, consigna: nivelBajada.consigna, exige: nivelBajada.exige ?? null, tamano: nivelBajada.banco.length, paraCompletar: PARA_COMPLETAR };
