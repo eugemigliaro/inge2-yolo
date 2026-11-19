@@ -6,6 +6,23 @@ YOLO es una plataforma donde estudiantes de los últimos años de la secundaria 
 
 - White paper: [`docs/white-paper.md`](docs/white-paper.md). El PDF se genera con `docs/render.sh`.
 - Diagramas: [`docs/diagramas/`](docs/diagramas/), con las fuentes en Mermaid.
+- Demo en la nube: **<https://yolo-tpif-34cb00.brazilsouth.cloudapp.azure.com>** (credenciales en [Demo en la nube](#demo-en-la-nube)).
+
+## Demo en la nube
+
+La PoC está desplegada en una VM de Azure (región Brazil South): **<https://yolo-tpif-34cb00.brazilsouth.cloudapp.azure.com>**. El despliegue se explica en [Despliegue en Azure](#despliegue-en-azure).
+
+| Para | Cuenta | Contraseña |
+|---|---|---|
+| Ver el dashboard de un padre, con el historial de Juana y las alertas | `ana+clerk_test@example.com` | `yolo-demo-2026!` |
+| Jugar en vivo como alumno | `tomas+clerk_test@example.com` | `yolo-demo-2026!` |
+| Ver el dashboard de un profesor | `pablo+clerk_test@example.com` | `yolo-demo-2026!` |
+
+Si Clerk pide un código de verificación, es `424242`. El resto de las cuentas está en [Usuarios de prueba](#usuarios-de-prueba).
+
+- Sin sesión se ve la portada pública. «Ya tengo cuenta» lleva al login y «Crear cuenta», al registro con elección de rol.
+- Para ver el flujo completo, conviene abrir a Ana en una ventana y a Tomás en otra privada: lo que juega Tomás aparece en el dashboard de Ana en segundos, con las alertas (pruebas 2 y 3 de [Qué probar](#qué-probar-y-qué-se-espera)).
+- Kafka UI y Mailpit no se exponen a Internet. Se ven por túnel SSH, con una clave autorizada en la VM (ver [Despliegue en Azure](#despliegue-en-azure)).
 
 ## Historia de usuario
 
@@ -27,7 +44,7 @@ Criterios de aceptación:
 
 | Servicio | Qué hace |
 |---|---|
-| `web` | App Next.js (TypeScript). Clerk autentica. Hay tres juegos, el dashboard y `POST /api/eventos`, que valida la jugada y **produce** en Kafka. |
+| `web` | App Next.js (TypeScript). Clerk autentica. Hay una portada pública, tres juegos, el dashboard y `POST /api/eventos`, que valida la jugada y **produce** en Kafka. |
 | `kafka` | Kafka 4.3 en modo KRaft, sin ZooKeeper. El tópico `juego.eventos` tiene 3 particiones, la clave es el id del alumno y la retención es infinita. |
 | `proyector` | Consumidor del grupo `dashboard-proyector`. Calcula el tiempo efectivo, las sesiones y la profundidad, y escribe el modelo de lectura en Postgres. Cada evento se aplica en una transacción junto con su `eventId`, así que es idempotente. |
 | `alertas` | Consumidor del grupo `alertas-tutor`. Recibe **los mismos** eventos que el proyector (publish–subscribe), detecta interés y frustración, guarda la alerta y manda el email. El nombre del grupo es histórico: el mail va al padre o al profesor. |
@@ -108,7 +125,7 @@ En Mailpit está el email a Ana por ese interés.
 
 **2. Interés en vivo.** En otra ventana (o en una ventana privada), ingresá como `tomas+clerk_test@example.com` y completá dos niveles distintos de un área, aunque sea de corrido. En el dashboard de Ana, pestaña Tomás, el recorrido se actualiza solo cada 5 segundos. Al terminar el segundo nivel aparece la alerta «Descubrió un interés» y llega el email a Mailpit.
 
-**3. Frustración en vivo.** Como Tomás, en el mismo nivel hacé un intento y tocá «Salir del nivel». Volvé a entrar, hacé otro intento y salí otra vez. Aparece la alerta «Señal de frustración» y llega el email. Salir sin intentar no suma.
+**3. Frustración en vivo.** Como Tomás, en un nivel que todavía no completó, hacé un intento y tocá «Salir del nivel». Volvé a entrar, hacé otro intento y salí otra vez. Aparece la alerta «Señal de frustración» y llega el email. Salir sin intentar no suma, y en La bajada solo cuenta una respuesta que entra al banco. Salir de un nivel ya completado tampoco suma: no se registra.
 
 **4. Desacoplamiento y tolerancia a fallas.**
 
@@ -142,14 +159,14 @@ Para reprocesar también las alertas, hay que truncar `alertas_procesadas`, `ale
 
 - `tipo` puede ser `nivel_iniciado`, `intento` o `nivel_abandonado`. El cliente no puede mandar `nivel_completado`: lo publica el servidor cuando el juego se cumple, con id `<eventId>:ok`.
 - En El caso y La bajada, `intento` lleva `respuesta`. En El tablero, `situacion` y `estante`.
-- Respuestas: **202** si se publicó algo, **200** si el intento no genera evento (diagnóstico fuera del catálogo, respuesta repetida), **400** si es inválido, **401** si no hay una sesión de alumno y **403** si el nivel todavía está bloqueado.
+- Respuestas: **202** si se publicó algo, **200** si el pedido no genera evento, **400** si es inválido, **401** si no hay una sesión de alumno y **403** si el nivel todavía está bloqueado. No generan evento un diagnóstico que no está en la lista del nivel, una respuesta de La bajada que no está en el banco o que ya se dijo, una situación que ya estaba en su estante y la salida de un nivel completado.
 - El alumno sale de la sesión, nunca del cuerpo del pedido. El texto escrito no viaja a Kafka.
 
 El evento que se publica (tópico `juego.eventos`, clave = id del alumno):
 
 ```json
 { "eventId": "…", "alumnoId": "22222222-…", "tipo": "intento", "area": "medicina", "areaNombre": "Medicina",
-  "nivel": 1, "totalNiveles": 3, "acierto": false, "cerca": true, "ts": 1794061721637 }
+  "nivel": 1, "totalNiveles": 9, "acierto": false, "cerca": true, "ts": 1794061721637 }
 ```
 
 `cerca` aparece en El caso. `rareza` (`obvia`, `comun` o `rara`) aparece en La bajada cuando la respuesta entra al banco.
@@ -191,7 +208,7 @@ az login                 # cuenta de Azure for Students
 deploy/azure.sh          # crea el grupo de recursos y la VM, copia el proyecto y lo levanta
 ```
 
-El script es idempotente: si la VM ya existe, solo copia los cambios y vuelve a levantar. Se puede cambiar la región con `LOCATION=brazilsouth deploy/azure.sh`; Azure for Students permite solo algunas regiones. Imprime la URL pública (`https://<nombre>.<región>.cloudapp.azure.com`). Las credenciales de acceso son las de [usuarios de prueba](#usuarios-de-prueba). En la VM también hay que haber corrido `bun scripts/clerk.mjs` una vez, desde una máquina con `CLERK_SECRET_KEY`, porque Clerk no vive en el compose.
+El script es idempotente: si la VM ya existe, solo copia los cambios y vuelve a levantar. **Antes de correrlo, hacé `git pull`:** copia el directorio local con `rsync --delete`, así que una copia vieja pisa lo que haya en la VM. Se puede cambiar la región con `LOCATION=brazilsouth deploy/azure.sh`; Azure for Students permite solo algunas regiones. Imprime la URL pública (`https://<nombre>.<región>.cloudapp.azure.com`); la del grupo es <https://yolo-tpif-34cb00.brazilsouth.cloudapp.azure.com>. Las credenciales de acceso son las de [usuarios de prueba](#usuarios-de-prueba). En la VM también hay que haber corrido `bun scripts/clerk.mjs` una vez, desde una máquina con `CLERK_SECRET_KEY`, porque Clerk no vive en el compose.
 
 Kafka UI y Mailpit no se exponen a Internet. Para verlos en la demo:
 
@@ -206,7 +223,7 @@ Para cuidar el crédito: `az vm deallocate -g yolo-tpif -n yolo-vm` (se vuelve a
 ```
 docker-compose.yml        stack completo
 db/init.sql               esquema, usuarios de demo, códigos y vínculos
-web/                      Next.js: Clerk, tres juegos, dashboard (app/tutor), ingesta
+web/                      Next.js: Clerk, portada, tres juegos, dashboard (app/tutor), ingesta
 workers/src/              proyector.ts, alertas.ts, seed.ts; la lógica pura está en reglas.ts
 scripts/                  clerk.mjs, e2e.sh, carga.sh
 deploy/                   azure.sh, cloud-init.yaml, docker-compose.cloud.yml
