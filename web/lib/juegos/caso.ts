@@ -44,6 +44,11 @@ export const CATALOGO: Diagnostico[] = [
   { id: 'calculo', nombre: 'Cálculo renal', sistema: 'Urinario', urgencia: 4, edad: 'Adulto', lugar: 'Guardia' },
   { id: 'anemia', nombre: 'Anemia', sistema: 'Sangre', urgencia: 2, edad: 'Cualquiera', lugar: 'Consultorio' },
   { id: 'diabetes', nombre: 'Diabetes', sistema: 'Hormonas', urgencia: 3, edad: 'Adulto', lugar: 'Consultorio' },
+  { id: 'amigdalitis', nombre: 'Amigdalitis', sistema: 'Respiratorio', urgencia: 2, edad: 'Niñez', lugar: 'Consultorio' },
+  { id: 'piojos', nombre: 'Piojos', sistema: 'Piel', urgencia: 1, edad: 'Niñez', lugar: 'Consultorio' },
+  { id: 'sarampion', nombre: 'Sarampión', sistema: 'Piel', urgencia: 3, edad: 'Niñez', lugar: 'Consultorio' },
+  { id: 'convulsion', nombre: 'Convulsión por fiebre', sistema: 'Nervioso', urgencia: 4, edad: 'Niñez', lugar: 'Guardia' },
+  { id: 'deshidratacion', nombre: 'Deshidratación', sistema: 'Digestivo', urgencia: 4, edad: 'Niñez', lugar: 'Guardia' },
 ];
 
 // Cada nivel tiene su propia lista: más larga y con diagnósticos más parecidos a medida que se avanza.
@@ -51,6 +56,7 @@ export const CATALOGO: Diagnostico[] = [
 // 1. Seis opciones bien distintas. 2. La fractura comparte parte del cuerpo y lugar con el esguince.
 // 3. La crisis de asma se diferencia de la neumonía solo por la edad. 4. Partes del cuerpo nuevas: esa ficha casi no ayuda.
 // 5. Todo es digestivo: la parte del cuerpo siempre da igual. 6. Pares casi gemelos: luxación y fractura difieren solo en la edad.
+// 7. Todo es de chicos: la edad no ayuda. 8. Todo es de guardia y son 17: el lugar no ayuda. 9. El catálogo completo.
 export const NIVELES: { titulo: string; secreto: string; opciones: string[] }[] = [
   { titulo: 'Primer paciente', secreto: 'resfrio', opciones: ['resfrio', 'conjuntivitis', 'otitis', 'fractura', 'apendicitis', 'infarto'] },
   {
@@ -76,7 +82,21 @@ export const NIVELES: { titulo: string; secreto: string; opciones: string[] }[] 
       'luxacion', 'esguince', 'faringitis', 'sinusitis', 'neumonia', 'asma', 'apendicitis', 'calculo',
     ],
   },
+  {
+    titulo: 'Consultorio de pediatría', secreto: 'amigdalitis',
+    opciones: ['asma', 'bronquiolitis', 'otitis', 'varicela', 'amigdalitis', 'piojos', 'sarampion', 'convulsion', 'deshidratacion'],
+  },
+  {
+    titulo: 'Guardia de noche', secreto: 'pancreatitis',
+    opciones: [
+      'neumonia', 'asma', 'bronquiolitis', 'esguince', 'fractura', 'luxacion', 'intoxicacion', 'pancreatitis', 'arritmia',
+      'infarto', 'conmocion', 'meningitis', 'acv', 'quemadura', 'calculo', 'convulsion', 'deshidratacion',
+    ],
+  },
+  { titulo: 'Todo el catálogo', secreto: 'sinusitis', opciones: [] },
 ];
+// El último nivel usa el catálogo completo.
+NIVELES[NIVELES.length - 1].opciones = CATALOGO.map((d) => d.id);
 
 export const opcionesDe = (nivel: number) =>
   (NIVELES[nivel - 1]?.opciones ?? []).map((id) => CATALOGO.find((d) => d.id === id)!);
