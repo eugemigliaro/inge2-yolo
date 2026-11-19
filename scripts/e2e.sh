@@ -43,7 +43,8 @@ check "el caso acepta el intento" "$(ev "$TOMAS_T" "$DUP" intento medicina 1 '"r
 check "reenvío aceptado"    "$(ev "$TOMAS_T" "$DUP" intento medicina 1 '"respuesta":"Resfrío"')" 202
 
 frus=$(sql "select count(*) from alertas where alumno_id = '$TOMAS' and tipo = 'frustracion'")
-for palabra in zzzz yyyy; do
+# Respuestas que están en el banco: una palabra que no está no se publica y no cuenta como intento.
+for palabra in disco memoria; do
   ev "$TOMAS_T" "$(uuid)" intento sistemas 1 "\"respuesta\":\"$palabra\"" >/dev/null
   ev "$TOMAS_T" "$(uuid)" nivel_abandonado sistemas 1 >/dev/null
 done

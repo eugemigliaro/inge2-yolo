@@ -1,5 +1,5 @@
 import { NIVELES as CASOS, estadoCaso, nuevosEn, opcionesDe, type EstadoCaso } from './juegos/caso';
-import { NIVELES as BAJADAS, PARA_COMPLETAR, estadoBajada, type EstadoBajada } from './juegos/bajada';
+import { NIVELES as BAJADAS, estadoBajada, type EstadoBajada } from './juegos/bajada';
 import { NIVELES as TABLEROS, estadoTablero, vistaTablero, type EstadoTablero } from './juegos/tablero';
 
 export type JuegoId = 'caso' | 'bajada' | 'tablero';
@@ -13,8 +13,8 @@ export const AREAS: Area[] = [
   },
   {
     slug: 'sistemas', nombre: 'Sistemas', juego: 'La bajada', juegoId: 'bajada',
-    descripcion: 'La consigna admite un banco enorme de respuestas. Alcanzan tres. No hay reloj.',
-    niveles: BAJADAS.map((n) => ({ titulo: n.consigna.replace(/\.$/, '') })),
+    descripcion: 'Nombrá cosas de la tecnología que usás todos los días. Cada consigna acepta muchas respuestas y no hay reloj.',
+    niveles: BAJADAS.map((n) => ({ titulo: n.titulo })),
   },
   {
     slug: 'derecho', nombre: 'Derecho', juego: 'El tablero', juegoId: 'tablero',
@@ -39,7 +39,7 @@ export function vistaNivel(slug: string, nivel: number) {
   if (a.juegoId === 'caso') return { juego: 'caso' as const, catalogo: opcionesDe(nivel).map((d) => d.nombre), nuevos: nuevosEn(nivel) };
   if (a.juegoId === 'bajada') {
     const nivelBajada = BAJADAS[nivel - 1];
-    return { juego: 'bajada' as const, consigna: nivelBajada.consigna, exige: nivelBajada.exige ?? null, tamano: nivelBajada.banco.length, paraCompletar: PARA_COMPLETAR };
+    return { juego: 'bajada' as const, consigna: nivelBajada.consigna, ejemplo: nivelBajada.ejemplo, exige: nivelBajada.exige ?? null, tamano: nivelBajada.banco.length, paraCompletar: nivelBajada.meta };
   }
   return { juego: 'tablero' as const, ...vistaTablero(nivel) };
 }

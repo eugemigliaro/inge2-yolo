@@ -7,8 +7,8 @@ import { enviar, useNivel } from './cliente';
 const RAREZA: Record<Rareza, string> = { obvia: 'obvia', comun: 'común', rara: 'rara' };
 type Aviso = { texto: string; tono: 'bien' | 'mal' };
 
-export function Bajada({ area, areaNombre, nivel, totalNiveles, consigna, exige, tamano, paraCompletar, inicial }: {
-  area: string; areaNombre: string; nivel: number; totalNiveles: number; consigna: string;
+export function Bajada({ area, areaNombre, nivel, totalNiveles, titulo, consigna, ejemplo, exige, tamano, paraCompletar, inicial }: {
+  area: string; areaNombre: string; nivel: number; totalNiveles: number; titulo: string; consigna: string; ejemplo: string;
   exige: Rareza | null; tamano: number; paraCompletar: number;
   inicial: { completado: boolean; aceptadas: Aceptada[] };
 }) {
@@ -30,27 +30,31 @@ export function Bajada({ area, areaNombre, nivel, totalNiveles, consigna, exige,
       return;
     }
     if (data.repetida) {
-      setAviso({ texto: 'Esa ya la dijiste.', tono: 'mal' });
+      setAviso({ texto: `Esa ya la sumaste${data.texto ? ` («${data.texto}»)` : ''}.`, tono: 'mal' });
       return;
     }
     if (data.acierto === false) {
-      setAviso({ texto: 'No está en el banco. Podés seguir intentando.', tono: 'mal' });
+      setAviso({ texto: 'Esa no la tenemos en la lista. Probá con otra: no te resta.', tono: 'mal' });
       setTexto('');
       return;
     }
     if (Array.isArray(data.aceptadas)) setAceptadas(data.aceptadas as Aceptada[]);
     setTexto('');
-    setAviso(data.rareza ? { texto: `Cuenta. Es una respuesta ${RAREZA[data.rareza as Rareza]}.`, tono: 'bien' } : null);
+    setAviso(data.rareza ? { texto: `Cuenta como «${data.texto}». Es una respuesta ${RAREZA[data.rareza as Rareza]}.`, tono: 'bien' } : null);
     if (data.completado) setFin(true);
   }
 
-  const falta = exige === 'rara' ? 'Al menos una tiene que ser rara.' : exige === 'comun' ? 'Al menos una tiene que ser común.' : 'Alcanza con tres, aunque sean obvias.';
+  const falta = exige === 'comun' ? 'Al menos una tiene que ser común, de las que no se le ocurren a cualquiera.' : `Alcanza con ${paraCompletar}, aunque sean obvias.`;
   const huecos = Math.max(paraCompletar, aceptadas.length);
 
   return (
     <section className="tarjeta juego juego-area tono-sistemas bajada">
-      <p className="tenue">{areaNombre} · La bajada · Nivel {nivel} de {totalNiveles}</p>
+      <p className="tenue">{areaNombre} · La bajada · Nivel {nivel} de {totalNiveles}: {titulo}</p>
       <h1>{consigna}</h1>
+      <p className="tenue">
+        Escribí respuestas cortas, de a una. Cada una que entra se marca como obvia, común o rara según cuánta gente
+        la dice. Si una no está en nuestra lista, no te resta.
+      </p>
       <p className="bajada-banco">
         {fin ? <strong className="logrado">Completaste el nivel.</strong> : `Llevás ${aceptadas.length} de ${paraCompletar}. ${falta}`}
         {' '}El banco tiene {tamano} respuestas.
@@ -73,7 +77,7 @@ export function Bajada({ area, areaNombre, nivel, totalNiveles, consigna, exige,
       ) : (
         <form onSubmit={probar}>
           <div className="fila-juego">
-            <input className="entrada bajada-input" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Escribí cualquiera que entre" aria-label="Respuesta" autoComplete="off" />
+            <input className="entrada bajada-input" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={`Por ejemplo: ${ejemplo}`} aria-label="Respuesta" autoComplete="off" />
             <button className="boton" disabled={ocupado}>Sumar</button>
           </div>
           {aviso && <p role="status" className={`aviso ${aviso.tono}`}>{aviso.texto}</p>}

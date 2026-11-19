@@ -31,7 +31,7 @@ export default async function PaginaNivel({ params }: Params) {
   const props = { area: area.slug, areaNombre: area.nombre, nivel, totalNiveles: area.niveles.length, titulo };
 
   if (vista.juego === 'caso' && 'intentos' in estado) return <Caso {...props} catalogo={vista.catalogo} nuevos={vista.nuevos} inicial={estado} />;
-  if (vista.juego === 'bajada' && 'aceptadas' in estado) return <Bajada {...props} consigna={vista.consigna} exige={vista.exige} tamano={vista.tamano} paraCompletar={vista.paraCompletar} inicial={estado} />;
+  if (vista.juego === 'bajada' && 'aceptadas' in estado) return <Bajada {...props} consigna={vista.consigna} ejemplo={vista.ejemplo} exige={vista.exige} tamano={vista.tamano} paraCompletar={vista.paraCompletar} inicial={estado} />;
   if (vista.juego === 'tablero' && 'correctas' in estado) return <Tablero {...props} situaciones={vista.situaciones} estantes={vista.estantes} inicial={estado} />;
   notFound();
 }

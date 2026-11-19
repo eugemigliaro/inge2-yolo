@@ -41,7 +41,7 @@ Los tres juegos, uno por carrera, no dependen de reflejos:
 | Área | Juego | Cómo se completa un nivel |
 |---|---|---|
 | Medicina | El caso | Adivinar el diagnóstico tocándolo en la lista. Cada intento muestra cuatro fichas (parte del cuerpo, gravedad, edad típica y dónde se atiende) en verde, amarillo o gris según se parezcan al correcto. Tiene seis niveles y cada uno trae su propia lista, de 6 a 16 diagnósticos: el 4 suma partes del cuerpo nuevas, en el 5 todos son digestivos y el 6 junta pares casi gemelos. |
-| Sistemas | La bajada | Juntar tres respuestas de un banco grande. El nivel 2 pide al menos una común y el 3, una rara. Una palabra fuera del banco es un fallo. |
+| Sistemas | La bajada | Juntar respuestas de un banco grande: 3 en los niveles 1 a 3, 4 en el 4 y el 5, y 5 en el 6. Desde el nivel 3 hace falta al menos una común. Las raras suman, pero ningún nivel las exige. La comparación ignora tildes, artículos y plurales, tolera un error de tipeo y acepta frases que contienen una respuesta. Una respuesta fuera del banco no se publica ni cuenta como fallo. |
 | Derecho | El tablero | Llevar cada situación a su estante: se arrastra, o se toca la ficha y después el estante, también con teclado. Una asignación incorrecta es un fallo y se puede reacomodar. Tiene seis niveles: el 4 duplica las situaciones, en el 5 todas tienen una palabra que lleva al estante equivocado y el 6 suma los estantes Consumo y Estado. |
 
 `nivel_completado` lo publica el servidor solo cuando se cumple esa condición. El cliente no puede inventarlo.
@@ -99,7 +99,7 @@ Todos usan la contraseña `yolo-demo-2026!`. El rol ya está cargado: no pasan p
 |---|---|
 | Áreas exploradas | 3 de 3 |
 | Tiempo efectivo | 6 min 10 s: Medicina 4 min, Sistemas 1 min 30 s, Derecho 40 s |
-| Niveles completados | 2 de 15: Medicina 2/6 con 40 % de aciertos, Sistemas 0/3 con 50 % y 1 abandono, Derecho 0/6 con 0 % y 1 abandono |
+| Niveles completados | 2 de 18: Medicina 2/6 con 40 % de aciertos, Sistemas 0/6 con 50 % y 1 abandono, Derecho 0/6 con 0 % y 1 abandono |
 | Sesiones | 4 |
 | Actividad | 4 días con juego en las últimas dos semanas |
 | Alertas | «Descubrió un interés» en Medicina. No hay frustración: cada salida fue una sola vez. |
