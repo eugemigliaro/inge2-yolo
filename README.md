@@ -175,11 +175,12 @@ El evento que se publica (tópico `juego.eventos`, clave = id del alumno):
 
 ```bash
 cd workers && bun test src/reglas.test.ts   # tiempo efectivo, sesiones, interés y frustración
+cd web && bun test                          # contenido de los juegos: correr después de tocar niveles
 scripts/e2e.sh                              # de punta a punta contra el stack levantado
 scripts/carga.sh 1000                       # 1000 eventos en paralelo; mide el atraso del proyector
 ```
 
-`e2e.sh` y `carga.sh` necesitan `CLERK_SECRET_KEY` y agregan datos a Tomás. Después, conviene volver al estado inicial (ver arriba).
+Los tests de `web` chequean que en cada nivel de El caso el diagnóstico escondido se pueda deducir, que cada situación de El tablero tenga su estante y que en La bajada ninguna respuesta choque con otra y cada nivel se pueda completar sin respuestas raras. `e2e.sh` y `carga.sh` necesitan `CLERK_SECRET_KEY` y agregan datos a Tomás. Después, conviene volver al estado inicial (ver arriba).
 
 ## Atributos de calidad que muestra la PoC
 
