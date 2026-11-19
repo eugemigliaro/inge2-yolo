@@ -1,4 +1,4 @@
-// Datos de prueba: dos semanas de historial de Juana, publicadas en Kafka como si vinieran del juego.
+// Datos de prueba: diez días de historial de Juana, publicadas en Kafka como si vinieran del juego.
 // Los ids son fijos, así que correrlo de nuevo no duplica nada en el proyector.
 import { kafka, TOPICO } from './comun.ts';
 import { historialJuana } from './historial-juana.ts';
