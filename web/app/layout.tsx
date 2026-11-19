@@ -25,11 +25,16 @@ export default async function Layout({ children }: { children: React.ReactNode }
         <body>
           <header className="barra">
             <Link href="/" className="logo">YOLO</Link>
-            {userId && (
+            {userId ? (
               <div className="usuario">
                 {u && <span>{u.nombre} · {ROL[u.rol]}</span>}
                 <UserButton />
               </div>
+            ) : (
+              <nav className="usuario" aria-label="Cuenta">
+                <Link href="/sign-in" className="enlace-barra">Ingresar</Link>
+                <Link href="/sign-up" className="boton-barra">Crear cuenta</Link>
+              </nav>
             )}
           </header>
           <main>{children}</main>

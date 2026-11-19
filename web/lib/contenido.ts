@@ -1,6 +1,6 @@
 import { CATALOGO, estadoCaso, type EstadoCaso } from './juegos/caso';
 import { NIVELES as BAJADAS, PARA_COMPLETAR, estadoBajada, type EstadoBajada } from './juegos/bajada';
-import { estadoTablero, vistaTablero, type EstadoTablero } from './juegos/tablero';
+import { NIVELES as TABLEROS, estadoTablero, vistaTablero, type EstadoTablero } from './juegos/tablero';
 
 export type JuegoId = 'caso' | 'bajada' | 'tablero';
 export type Area = { slug: string; nombre: string; juego: string; juegoId: JuegoId; descripcion: string; niveles: { titulo: string }[] };
@@ -8,9 +8,9 @@ export type Area = { slug: string; nombre: string; juego: string; juegoId: Juego
 export const AREAS: Area[] = [
   {
     slug: 'medicina', nombre: 'Medicina', juego: 'El caso', juegoId: 'caso',
-    descripcion: 'Adiviná el cuadro. Cada intento da vuelta fichas: sistema, urgencia, edad y dónde se atiende.',
+    descripcion: 'Adiviná el diagnóstico del paciente. Cada intento te muestra en qué se parece al correcto.',
     niveles: [
-      { titulo: 'Un cuadro que se separa fácil' },
+      { titulo: 'Primer paciente' },
       { titulo: 'Se parece a otros' },
       { titulo: 'Una sola ficha distinta' },
     ],
@@ -22,12 +22,8 @@ export const AREAS: Area[] = [
   },
   {
     slug: 'derecho', nombre: 'Derecho', juego: 'El tablero', juegoId: 'tablero',
-    descripcion: 'Llevá cada situación a su estante: arrastrala, o tocala y después tocá el estante.',
-    niveles: [
-      { titulo: 'Tres casos claros' },
-      { titulo: 'Uno por estante' },
-      { titulo: 'El que parece otra cosa' },
-    ],
+    descripcion: 'Llevá cada situación a la rama del derecho que le toca. Cada nivel es más difícil que el anterior.',
+    niveles: TABLEROS.map((n) => ({ titulo: n.titulo })),
   },
 ];
 

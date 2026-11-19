@@ -48,16 +48,16 @@ function fichaCat(nombre: string, secreto: string, guess: string, cercaDe: Recor
 
 export function comparar(secreto: Diagnostico, guess: Diagnostico): Ficha[] {
   const urgencia: Ficha = {
-    nombre: 'Urgencia',
+    nombre: 'Gravedad',
     valor: String(guess.urgencia),
     resultado: secreto.urgencia === guess.urgencia ? 'igual' : Math.abs(secreto.urgencia - guess.urgencia) === 1 ? 'cerca' : 'distinto',
   };
   if (secreto.urgencia !== guess.urgencia) urgencia.flecha = secreto.urgencia > guess.urgencia ? 'más' : 'menos';
   return [
-    fichaCat('Sistema', secreto.sistema, guess.sistema, {}),
+    fichaCat('Parte del cuerpo', secreto.sistema, guess.sistema, {}),
     urgencia,
-    fichaCat('Edad', secreto.edad, guess.edad, EDAD_CERCA),
-    fichaCat('Dónde', secreto.lugar, guess.lugar, LUGAR_CERCA),
+    fichaCat('Edad típica', secreto.edad, guess.edad, EDAD_CERCA),
+    fichaCat('Dónde se atiende', secreto.lugar, guess.lugar, LUGAR_CERCA),
   ];
 }
 

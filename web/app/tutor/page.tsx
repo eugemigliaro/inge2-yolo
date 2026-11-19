@@ -86,7 +86,7 @@ export default async function Dashboard({ searchParams }: { searchParams: Promis
       <div className="tiles">
         <div className="tile"><span>Áreas exploradas</span><strong>{exploradas} de {AREAS.length}</strong></div>
         <div className="tile"><span>Tiempo efectivo de juego</span><strong>{duracion(total)}</strong></div>
-        <div className="tile"><span>Niveles completados</span><strong>{niveles} de {AREAS.length * 3}</strong></div>
+        <div className="tile"><span>Niveles completados</span><strong>{niveles} de {AREAS.reduce((s, a) => s + a.niveles.length, 0)}</strong></div>
         <div className="tile"><span>Sesiones</span><strong>{estado.rows[0]?.sesiones ?? 0}</strong></div>
       </div>
 

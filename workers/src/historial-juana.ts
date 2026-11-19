@@ -3,6 +3,8 @@ import type { EventoJuego } from './comun.ts';
 const JUANA = '11111111-1111-4111-8111-111111111111';
 const DIA = 86_400_000;
 
+const NIVELES: Record<string, number> = { medicina: 3, sistemas: 3, derecho: 6 };
+
 // Cuatro días de juego en los últimos diez: el gráfico de 14 días los sigue mostrando unos días después del seed.
 // Medicina cumple interés: completa dos niveles distintos.
 // Sistemas y Derecho se abandonan con un solo fallo: no hay frustración.
@@ -14,7 +16,7 @@ export function historialJuana(ahora: number): EventoJuego[] {
     extra: Partial<EventoJuego> = {},
   ) => {
     eventos.push({
-      eventId: `seed-juana-${n++}`, alumnoId: JUANA, area, areaNombre, nivel, totalNiveles: 3,
+      eventId: `seed-juana-${n++}`, alumnoId: JUANA, area, areaNombre, nivel, totalNiveles: NIVELES[area],
       tipo, ts: ahora - dias * DIA + offset, ...extra,
     });
   };

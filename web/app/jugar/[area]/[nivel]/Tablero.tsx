@@ -108,8 +108,8 @@ export function Tablero({ area, areaNombre, nivel, totalNiveles, titulo, situaci
   );
 
   return (
-    <section className={`tarjeta juego juego-ancho${arrastrando ? ' esta-arrastrando' : ''}`}>
-      <p className="tenue">{areaNombre} · El tablero · Nivel {nivel}: {titulo}</p>
+    <section className={`tarjeta juego juego-ancho juego-area tono-derecho${arrastrando ? ' esta-arrastrando' : ''}`}>
+      <p className="tenue">{areaNombre} · El tablero · Nivel {nivel} de {totalNiveles}: {titulo}</p>
       <h1>{fin ? 'El tablero quedó armado' : 'Llevá cada situación a su estante'}</h1>
       {fin ? (
         <>

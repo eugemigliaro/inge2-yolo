@@ -48,7 +48,7 @@ export function Bajada({ area, areaNombre, nivel, totalNiveles, consigna, exige,
   const huecos = Math.max(paraCompletar, aceptadas.length);
 
   return (
-    <section className="tarjeta juego bajada">
+    <section className="tarjeta juego juego-area tono-sistemas bajada">
       <p className="tenue">{areaNombre} · La bajada · Nivel {nivel} de {totalNiveles}</p>
       <h1>{consigna}</h1>
       <p className="bajada-banco">
