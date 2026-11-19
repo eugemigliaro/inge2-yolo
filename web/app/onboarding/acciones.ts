@@ -5,6 +5,8 @@ import { redirect } from 'next/navigation';
 import { esRol, usuarioActual } from '@/lib/auth';
 import { db } from '@/lib/db';
 
+export type EstadoOnboarding = { error: string } | null;
+
 const ALFABETO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 function codigoNuevo() {
@@ -16,18 +18,18 @@ function codigosDe(texto: string) {
   return [...new Set(texto.split(/[\s,;]+/).map((c) => c.trim().toUpperCase()).filter(Boolean))];
 }
 
-export async function elegirRol(form: FormData) {
+export async function elegirRol(_previo: EstadoOnboarding, form: FormData): Promise<EstadoOnboarding> {
   const sesion = await auth();
   if (!sesion.userId) redirect('/sign-in');
   if (await usuarioActual()) redirect('/');
 
   const rol = form.get('rol');
-  if (!esRol(rol)) redirect('/onboarding?error=rol');
-  const codigos = codigosDe(String(form.get('codigos') ?? ''));
+  if (!esRol(rol)) return { error: 'Elegí cómo vas a usar YOLO.' };
+  const codigos = rol === 'alumno' ? [] : codigosDe(String(form.get('codigos') ?? ''));
 
   const cu = await (await clerkClient()).users.getUser(sesion.userId);
   const email = cu.emailAddresses[0]?.emailAddress?.toLowerCase();
-  if (!email) redirect('/onboarding?error=email');
+  if (!email) return { error: 'Tu cuenta no tiene un email.' };
   const nombre = [cu.firstName, cu.lastName].filter(Boolean).join(' ') || email.split('@')[0];
 
   const cx = await db.connect();
@@ -59,7 +61,7 @@ export async function elegirRol(form: FormData) {
     cx.release();
   }
 
-  if (error) redirect(`/onboarding?error=${error}`);
+  if (error) return { error };
   try {
     await (await clerkClient()).users.updateUser(sesion.userId, { publicMetadata: { rol } });
   } catch { /* el rol ya quedó en Postgres */ }
@@ -69,9 +71,11 @@ export async function elegirRol(form: FormData) {
 async function vincularPadre(
   cx: { query: typeof db.query }, id: string, clerkId: string, email: string, nombre: string, codigos: string[],
 ) {
-  if (codigos.length === 0) return 'vacio';
-  const { rows } = await cx.query('select id from usuarios where rol = $1 and codigo = any($2)', ['alumno', codigos]);
-  if (rows.length !== codigos.length) return 'codigo';
+  if (codigos.length === 0) return 'Escribí el código de al menos un hijo.';
+  const { rows } = await cx.query('select id, codigo from usuarios where rol = $1 and codigo = any($2)', ['alumno', codigos]);
+  const faltan = codigos.filter((c) => !rows.some((r) => r.codigo === c));
+  if (faltan.length === 1) return `No hay ningún alumno con el código ${faltan[0]}.`;
+  if (faltan.length > 1) return `No hay alumnos con los códigos ${faltan.join(', ')}.`;
   await cx.query('insert into usuarios (id, clerk_id, email, nombre, rol) values ($1, $2, $3, $4, $5)', [id, clerkId, email, nombre, 'padre']);
   for (const hijo of rows) await cx.query('insert into vinculo_padre values ($1, $2)', [id, hijo.id]);
   return null;
@@ -80,9 +84,9 @@ async function vincularPadre(
 async function vincularProfesor(
   cx: { query: typeof db.query }, id: string, clerkId: string, email: string, nombre: string, codigos: string[],
 ) {
-  if (codigos.length !== 1) return 'curso';
+  if (codigos.length !== 1) return 'Escribí un solo código de curso.';
   const { rows } = await cx.query('select id from cursos where codigo = $1', [codigos[0]]);
-  if (!rows[0]) return 'curso';
+  if (!rows[0]) return `No hay ningún curso con el código ${codigos[0]}.`;
   await cx.query('insert into usuarios (id, clerk_id, email, nombre, rol) values ($1, $2, $3, $4, $5)', [id, clerkId, email, nombre, 'profesor']);
   await cx.query('insert into profesor_curso values ($1, $2)', [id, rows[0].id]);
   return null;
