@@ -9,15 +9,21 @@ export const ESTANTES = [
   { id: 'trabajo', nombre: 'Trabajo' },
   { id: 'consumo', nombre: 'Consumo' },
   { id: 'estado', nombre: 'Estado' },
+  { id: 'autor', nombre: 'Derechos de autor' },
+  { id: 'ambiente', nombre: 'Ambiente' },
 ];
 
 type Nivel = { titulo: string; estantes: string[]; situaciones: Situacion[] };
 const CUATRO = ['contrato', 'falta', 'familia', 'trabajo'];
+const SEIS = [...CUATRO, 'consumo', 'estado'];
+const OCHO = [...SEIS, 'autor', 'ambiente'];
 
 // La dificultad sube de a un paso por nivel:
 // 1. Tres situaciones evidentes. 2. Una por estante. 3. El sueldo impago parece una falta, y es trabajo.
 // 4. El doble de situaciones. 5. Todas tienen una palabra que lleva al estante equivocado.
 // 6. Aparecen Consumo y Estado, que se confunden con Contrato y con Falta.
+// 7. Aparecen Derechos de autor y Ambiente. 8. Diez situaciones en ocho estantes.
+// 9. Cada situación toca dos ramas: va donde está el conflicto, no donde suena.
 export const NIVELES: Nivel[] = [
   {
     titulo: 'Tres casos claros', estantes: CUATRO, situaciones: [
@@ -65,7 +71,7 @@ export const NIVELES: Nivel[] = [
     ],
   },
   {
-    titulo: 'Dos estantes nuevos', estantes: ESTANTES.map((e) => e.id), situaciones: [
+    titulo: 'Dos estantes nuevos', estantes: SEIS, situaciones: [
       { id: 'celular-roto', texto: 'Comprás un celular en un negocio, no anda y no te lo quieren cambiar.', estante: 'consumo' },
       { id: 'internet', texto: 'La empresa de internet te cobra un servicio que no pediste.', estante: 'consumo' },
       { id: 'bici-usada', texto: 'Le comprás la bici usada a un compañero y le pagás en cuotas.', estante: 'contrato' },
@@ -74,6 +80,45 @@ export const NIVELES: Nivel[] = [
       { id: 'coima', texto: 'Un empleado público te pide plata para aprobar un trámite.', estante: 'falta' },
       { id: 'in-itinere', texto: 'Te accidentás en el camino de tu casa al trabajo.', estante: 'trabajo' },
       { id: 'abuela', texto: 'Una abuela pide que la dejen ver a sus nietos.', estante: 'familia' },
+    ],
+  },
+  {
+    titulo: 'Ocho estantes', estantes: OCHO, situaciones: [
+      { id: 'pelicula', texto: 'Subís a internet una película entera que no es tuya.', estante: 'autor' },
+      { id: 'foto-ajena', texto: 'Una marca usa la foto de un fotógrafo en una publicidad sin pedirle permiso.', estante: 'autor' },
+      { id: 'rio', texto: 'Una fábrica tira residuos tóxicos a un río.', estante: 'ambiente' },
+      { id: 'bosque', texto: 'Desmontan un bosque nativo protegido para sembrar.', estante: 'ambiente' },
+      { id: 'cuenta', texto: 'Alguien adivina tu contraseña y entra a tu cuenta para sacarte plata.', estante: 'falta' },
+      { id: 'compra-online', texto: 'Comprás algo por internet, lo pagás y nunca llega.', estante: 'consumo' },
+      { id: 'domingos', texto: 'Te hacen trabajar todos los domingos sin pagarte las horas extra.', estante: 'trabajo' },
+      { id: 'cuota', texto: 'Una madre pide que el padre de su hijo pague una cuota alimentaria.', estante: 'familia' },
+    ],
+  },
+  {
+    titulo: 'Diez casos', estantes: OCHO, situaciones: [
+      { id: 'remeras', texto: 'Un compañero vende remeras con un dibujo que hiciste vos, sin tu permiso.', estante: 'autor' },
+      { id: 'humo', texto: 'Una empresa quema basura todos los días y el humo llega a todo el barrio.', estante: 'ambiente' },
+      { id: 'agua', texto: 'Una minera usa tanta agua que el pueblo se queda sin.', estante: 'ambiente' },
+      { id: 'heladera', texto: 'La heladera que compraste se rompe a los dos meses y no te la arreglan.', estante: 'consumo' },
+      { id: 'licencia-conducir', texto: 'Te niegan la licencia de conducir porque no aprobaste el examen.', estante: 'estado' },
+      { id: 'aguinaldo', texto: 'No te pagan el aguinaldo de diciembre.', estante: 'trabajo' },
+      { id: 'herencia', texto: 'Dos hermanos discuten cómo repartir la casa que les dejó su madre.', estante: 'familia' },
+      { id: 'premio-falso', texto: 'Te llaman por un premio falso y te sacan los datos de la tarjeta.', estante: 'falta' },
+      { id: 'auto-prestado', texto: 'Le prestás el auto a un amigo y acuerdan que lo devuelve el lunes.', estante: 'contrato' },
+      { id: 'carpinteria', texto: 'Contratás a un carpintero para que te haga una mesa por un precio cerrado.', estante: 'contrato' },
+    ],
+  },
+  {
+    titulo: 'Lo que más pesa', estantes: OCHO, situaciones: [
+      { id: 'caja', texto: 'Una empleada se lleva plata de la caja del negocio donde trabaja.', estante: 'falta' },
+      { id: 'casco', texto: 'En la fábrica no te dan casco y te lastimás trabajando.', estante: 'trabajo' },
+      { id: 'embarazo', texto: 'Despiden a una empleada porque está embarazada.', estante: 'trabajo' },
+      { id: 'curtiembre', texto: 'Una curtiembre contamina el arroyo y los vecinos se enferman.', estante: 'ambiente' },
+      { id: 'alquiler-nuevo', texto: 'Después de divorciarse, tu mamá alquila un departamento.', estante: 'contrato' },
+      { id: 'compras-juego', texto: 'Un juego del celular te cobra compras que hizo tu hermanito sin que nadie se diera cuenta.', estante: 'consumo' },
+      { id: 'boliche', texto: 'Un boliche pasa música todas las noches sin pagarles a los autores.', estante: 'autor' },
+      { id: 'tutela', texto: 'Un juez nombra a una tía para que cuide a un chico que se quedó sin padres.', estante: 'familia' },
+      { id: 'impuestos', texto: 'El fisco te reclama los impuestos que no pagaste de tu emprendimiento.', estante: 'estado' },
     ],
   },
 ];

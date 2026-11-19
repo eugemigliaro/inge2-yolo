@@ -185,6 +185,8 @@ th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--bord
 .estante-zona[data-estante="trabajo"] { --tono: var(--sistemas); }
 .estante-zona[data-estante="consumo"] { --tono: #7a5cff; }
 .estante-zona[data-estante="estado"] { --tono: #a07a1f; }
+.estante-zona[data-estante="autor"] { --tono: #c2410c; }
+.estante-zona[data-estante="ambiente"] { --tono: #4d7c0f; }
 .estante-zona.sobre { outline: 3px solid var(--tono, var(--acento)); background: color-mix(in srgb, var(--tono, var(--acento)) 32%, var(--superficie)); }
 .estante-zona:disabled { opacity: 1; }
 .estante-zona.destino { cursor: pointer; border-style: dashed; }
