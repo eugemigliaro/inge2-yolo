@@ -4,6 +4,7 @@ import nodemailer from 'nodemailer';
 import { consumir, db, type EventoJuego } from './comun.ts';
 import { aplicarEventoAlerta, estadoAlertasVacio, type EstadoAlertas } from './reglas.ts';
 
+const APP_URL = (process.env.APP_URL ?? 'http://localhost:3000').replace(/\/$/, '');
 const mail = nodemailer.createTransport({ host: process.env.SMTP_HOST ?? 'localhost', port: Number(process.env.SMTP_PORT ?? 1025) });
 
 async function avisar(id: string, ev: EventoJuego, tipo: 'interes' | 'frustracion', mensaje: string) {
@@ -30,7 +31,7 @@ async function avisar(id: string, ev: EventoJuego, tipo: 'interes' | 'frustracio
       from: 'YOLO <avisos@yolo.test>',
       to: r.email,
       subject: tipo === 'interes' ? `${r.alumno} descubrió un interés en ${ev.areaNombre}` : `${r.alumno} podría estar frustrado/a`,
-      text: `Hola ${r.tutor}:\n\n${r.alumno} ${mensaje}\n\nPodés ver su recorrido completo en el dashboard de YOLO.`,
+      text: `Hola ${r.tutor}:\n\n${r.alumno} ${mensaje}\n\nSu recorrido completo: ${APP_URL}/tutor?alumno=${ev.alumnoId}`,
     });
   }
 }
