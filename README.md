@@ -34,7 +34,7 @@ Criterios de aceptación:
 | `postgres` | Roles, vínculos y modelo de lectura. La sesión no se guarda acá: la maneja Clerk. |
 | `mailpit` | Servidor SMTP de prueba con bandeja web. |
 | `kafka-ui` | Para mirar el tópico, las particiones, los mensajes y el atraso (lag) de cada grupo durante la demo. |
-| `seed` | Al arrancar, publica en Kafka dos semanas de historial de Juana. Corre una sola vez. |
+| `seed` | Al arrancar, publica en Kafka diez días de historial de Juana. Corre una sola vez. |
 
 Los tres juegos, uno por carrera, no dependen de reflejos:
 
@@ -42,7 +42,7 @@ Los tres juegos, uno por carrera, no dependen de reflejos:
 |---|---|---|
 | Medicina | El caso | Adivinar el cuadro del catálogo. Cada intento da vuelta fichas. Una palabra que no está en el catálogo no gasta un intento. |
 | Sistemas | La bajada | Juntar tres respuestas de un banco grande. El nivel 2 pide al menos una común y el 3, una rara. Una palabra fuera del banco es un fallo. |
-| Derecho | El tablero | Asignar cada situación a su estante, tocando fichas. Una asignación incorrecta es un fallo y se puede reacomodar. |
+| Derecho | El tablero | Llevar cada situación a su estante: se arrastra, o se toca la ficha y después el estante, también con teclado. Una asignación incorrecta es un fallo y se puede reacomodar. |
 
 `nivel_completado` lo publica el servidor solo cuando se cumple esa condición. El cliente no puede inventarlo.
 
@@ -77,13 +77,15 @@ docker compose down -v && docker compose up -d
 
 Las cuentas de Clerk no se borran con ese comando. `bun scripts/clerk.mjs` se puede correr de nuevo: actualiza las que ya existen.
 
+El historial de Juana se fecha respecto del día en que corre el `seed`, y la actividad del dashboard muestra los últimos 14 días. Conviene volver al estado inicial el mismo día de la demo, también en la VM.
+
 ## Usuarios de prueba
 
 Todos usan la contraseña `yolo-demo-2026!`. El rol ya está cargado: no pasan por el onboarding. Una cuenta nueva, en cambio, elige alumno, padre o profesor, y vincula por código. Los mails llevan `+clerk_test` porque Clerk rechaza el dominio `.test`. Si pide un código de verificación, es `424242`.
 
 | Email | Rol | Código | Para qué sirve |
 |---|---|---|---|
-| `juana+clerk_test@example.com` | alumna | `JUANA` | Ya tiene dos semanas de historial (lo carga el `seed`). |
+| `juana+clerk_test@example.com` | alumna | `JUANA` | Ya tiene diez días de historial (lo carga el `seed`). |
 | `tomas+clerk_test@example.com` | alumno | `TOMAS` | Arranca vacío: es el que se juega en vivo en la demo. |
 | `lucia+clerk_test@example.com` | alumna | `LUCIA` | Única alumna del curso `5TOB`. |
 | `ana+clerk_test@example.com` | padre | — | Padre de Juana y Tomás. |
@@ -140,7 +142,7 @@ Para reprocesar también las alertas, hay que truncar `alertas_procesadas`, `ale
 
 - `tipo` puede ser `nivel_iniciado`, `intento` o `nivel_abandonado`. El cliente no puede mandar `nivel_completado`: lo publica el servidor cuando el juego se cumple, con id `<eventId>:ok`.
 - En El caso y La bajada, `intento` lleva `respuesta`. En El tablero, `situacion` y `estante`.
-- Respuestas: **202** si se publicó algo, **200** si el intento no genera evento (diagnóstico fuera del catálogo, respuesta repetida), **400** si es inválido y **401** si no hay una sesión de alumno.
+- Respuestas: **202** si se publicó algo, **200** si el intento no genera evento (diagnóstico fuera del catálogo, respuesta repetida), **400** si es inválido, **401** si no hay una sesión de alumno y **403** si el nivel todavía está bloqueado.
 - El alumno sale de la sesión, nunca del cuerpo del pedido. El texto escrito no viaja a Kafka.
 
 El evento que se publica (tópico `juego.eventos`, clave = id del alumno):
@@ -216,5 +218,4 @@ docs/                     white paper y diagramas
 - **Un solo broker de Kafka**, sin replicación. En producción harían falta 3 brokers o un servicio gestionado, por ejemplo Azure Event Hubs con su endpoint compatible con Kafka.
 - **Clerk no está en el compose.** Sin las claves, y sin haber creado las cuentas, no se puede entrar. Es un servicio externo a propósito: la identidad no es lo que la PoC demuestra.
 - **El email se manda después de guardar la alerta.** Si el envío falla, la alerta queda en el dashboard pero sin email. Con un outbox se resolvería.
-- **El siguiente nivel de la sala aparece cuando el proyector escribe `nivel_max`.** El servidor sí decide el completado, pero la lista lo lee de Postgres unos segundos después.
 - **El contenido es de ejemplo.** Lo que se evalúa es la arquitectura, no los diagnósticos ni las consignas.
