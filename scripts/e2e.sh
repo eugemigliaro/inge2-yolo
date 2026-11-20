@@ -43,10 +43,21 @@ check "el caso acepta el intento" "$(ev "$TOMAS_T" "$DUP" intento medicina 1 '"r
 check "reenvío aceptado"    "$(ev "$TOMAS_T" "$DUP" intento medicina 1 '"respuesta":"Resfrío"')" 202
 
 frus=$(sql "select count(*) from alertas where alumno_id = '$TOMAS' and tipo = 'frustracion'")
-# Respuestas que están en el banco: una palabra que no está no se publica y no cuenta como intento.
-for palabra in disco memoria; do
-  ev "$TOMAS_T" "$(uuid)" intento sistemas 1 "\"respuesta\":\"$palabra\"" >/dev/null
-  ev "$TOMAS_T" "$(uuid)" nivel_abandonado sistemas 1 >/dev/null
+# La frustración se prueba en La bajada, en el primer nivel de Sistemas que Tomás todavía no completó.
+# Si ya completó los 9, se libera el último. En los dos casos se borra la partida de ese nivel, así que
+# arranca sin respuestas aceptadas: una sola por visita nunca completa el nivel, que pide 3 o más.
+NIVEL_S=$(sql "select least(coalesce(max(nivel), 0) + 1, 9) from (
+  select nivel from partida where alumno_id = '$TOMAS' and area = 'sistemas' and (estado->>'completado')::boolean
+  union all select nivel_max from progreso_area where alumno_id = '$TOMAS' and area = 'sistemas') t")
+sql "delete from partida where alumno_id = '$TOMAS' and area = 'sistemas' and nivel = $NIVEL_S" >/dev/null
+echo "      frustración en Sistemas, nivel $NIVEL_S"
+# Dos respuestas del banco de ese nivel: una palabra que no está en el banco no se publica y no cuenta como intento.
+PALABRAS=$(bun -e "const { NIVELES, mostrar } = await import('./web/lib/juegos/bajada.ts');
+  console.log(NIVELES[$NIVEL_S - 1].banco.slice(0, 2).map(mostrar).join('\n'))")
+for i in 1 2; do
+  palabra=$(printf '%s\n' "$PALABRAS" | sed -n "${i}p")
+  ev "$TOMAS_T" "$(uuid)" intento sistemas "$NIVEL_S" "\"respuesta\":\"$palabra\"" >/dev/null
+  ev "$TOMAS_T" "$(uuid)" nivel_abandonado sistemas "$NIVEL_S" >/dev/null
 done
 sleep 3
 check "el reenvío se contó una sola vez" "$(sql "select coalesce(sum(intentos), 0) from progreso_area where alumno_id = '$TOMAS' and area = 'medicina'")" "$((antes + 1))"
