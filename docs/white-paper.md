@@ -45,7 +45,7 @@ lang: es
     - [4.3 Atributos de calidad: escenarios y evidencia](#atributos)
 - [5. Qué hace falta para llevarlo adelante](#recursos)
 - [6. Riesgos y próximos pasos](#riesgos)
-- [Anexo: demo en la nube y stack](#anexo)
+- Anexos: [A. Demo en la nube y stack](#anexo) · [B. Diagramas](#diagramas) · [C. Referencias](#referencias)
 
 <div class="salto"></div>
 
@@ -204,7 +204,7 @@ Con tres personas desarrollando, son unas 6 o 7 semanas de calendario más conti
 
 <div class="salto"></div>
 
-## Anexo: demo en la nube y stack {#anexo}
+## Anexo A: demo en la nube y stack {#anexo}
 
 **Demo desplegada.** La PoC corre en una VM de Azure (Brazil South), con el mismo `docker-compose.yml` más Caddy para HTTPS: <https://yolo-tpif-34cb00.brazilsouth.cloudapp.azure.com>. El código y las instrucciones están en <https://github.com/eugemigliaro/inge2-yolo>.
 
@@ -229,3 +229,37 @@ Kafka UI y Mailpit no se exponen a Internet; se ven por túnel SSH.
 | Modelo de lectura y estado de alertas | PostgreSQL 17 |
 | Email y observación | Mailpit (SMTP de prueba) y Kafka UI |
 | Despliegue | Docker Compose; en la nube, VM de Azure con Caddy |
+
+<div class="salto"></div>
+
+## Anexo B: despliegue y secuencia de un evento {#diagramas}
+
+**Vista física.** Una VM de Azure corre el mismo `docker compose` que la PoC local. Solo los puertos 22, 80 y 443 quedan abiertos: Caddy termina HTTPS y Kafka UI y Mailpit escuchan únicamente en `127.0.0.1`.
+
+![Despliegue en Azure.](diagramas/despliegue.svg)
+
+**Un evento, de punta a punta.** El alumno completa el segundo nivel de Medicina. La ingesta responde 202 en cuanto el evento está en Kafka, y los dos grupos de consumidores lo procesan en paralelo, sin conocerse.
+
+![Secuencia de un nivel completado.](diagramas/secuencia.svg)
+
+<div class="salto"></div>
+
+## Anexo C: referencias {#referencias}
+
+**Material de la materia**
+
+- Clase 5: estimación de proyectos de software (PERT). Ingeniería de Software II, ITBA, 2026.
+- Clase 8: vistas y estilos de arquitectura (*publish–subscribe*, *pipes & filters* y los tipos de procesamiento de eventos). Ingeniería de Software II, ITBA, 2026.
+- Clase 9: evaluación de arquitecturas (atributos de calidad y árbol de utilidad). Ingeniería de Software II, ITBA, 2026.
+
+**Kafka**
+
+- Apache Software Foundation. *Apache Kafka Documentation*: tópicos, particiones, grupos de consumidores, retención y garantías de entrega. <https://kafka.apache.org/documentation/>
+- KIP-500: *Replace ZooKeeper with a Self-Managed Metadata Quorum* (origen de KRaft). <https://cwiki.apache.org/confluence/display/KAFKA/KIP-500%3A+Replace+ZooKeeper+with+a+Self-Managed+Metadata+Quorum>
+- KIP-98: *Exactly Once Delivery and Transactional Messaging* (productor idempotente y transacciones). <https://cwiki.apache.org/confluence/display/KAFKA/KIP-98+-+Exactly+Once+Delivery+and+Transactional+Messaging>
+- Confluent. *confluent-kafka-javascript*, el cliente usado por la ingesta y los consumidores. <https://github.com/confluentinc/confluent-kafka-javascript>
+
+**Alternativas y servicios gestionados**
+
+- RabbitMQ. *Streams*, el modo de RabbitMQ con log retenido y relectura. <https://www.rabbitmq.com/docs/streams>
+- Microsoft. *Azure Event Hubs for Apache Kafka*. <https://learn.microsoft.com/en-us/azure/event-hubs/azure-event-hubs-apache-kafka-overview>
