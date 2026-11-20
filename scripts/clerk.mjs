@@ -16,6 +16,10 @@ if (!SECRET) {
   process.exit(1);
 }
 
+// La contraseña de las cuentas de demo no va en el repositorio: se lee de DEMO_PASSWORD, en el .env.
+// Clerk exige al menos 15 caracteres. Se reparte con la entrega, no por git.
+const PASSWORD = process.env.DEMO_PASSWORD;
+
 const USUARIOS = [
   { email: 'juana+clerk_test@example.com', nombre: 'Juana', rol: 'alumno' },
   { email: 'tomas+clerk_test@example.com', nombre: 'Tomás', rol: 'alumno' },
@@ -47,12 +51,16 @@ async function guardarRol(id, rol) {
 }
 
 async function sembrar() {
+  if (!PASSWORD || PASSWORD.length < 15) {
+    console.error('Falta DEMO_PASSWORD en el .env, o tiene menos de 15 caracteres.');
+    process.exit(1);
+  }
   for (const u of USUARIOS) {
     const ya = await usuario(u.email);
     if (ya) {
       await api('PATCH', `/users/${ya.id}`, {
         first_name: u.nombre,
-        password: 'yolo-demo-2026!',
+        password: PASSWORD,
         skip_password_checks: true,
       });
       await guardarRol(ya.id, u.rol);
@@ -60,7 +68,7 @@ async function sembrar() {
     } else {
       const creado = await api('POST', '/users', {
         email_address: [u.email],
-        password: 'yolo-demo-2026!',
+        password: PASSWORD,
         first_name: u.nombre,
         skip_password_checks: true,
       });
