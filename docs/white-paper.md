@@ -9,7 +9,7 @@ lang: es
 <p class="subtitulo">Trabajo Práctico Integrador Final · White paper</p>
 <p class="subtitulo">Instituto Tecnológico de Buenos Aires</p>
 <p><img src="img/logo-itba.png" alt="ITBA" width="240"></p>
-<p class="subtitulo">YOLO: el recorrido vocacional, medido en tiempo real</p>
+<p class="subtitulo">YOLO: descubrí tu camino</p>
 
 </div>
 
@@ -45,6 +45,7 @@ lang: es
     - [4.3 Atributos de calidad: escenarios y evidencia](#atributos)
 - [5. Qué hace falta para llevarlo adelante](#recursos)
 - [6. Riesgos y próximos pasos](#riesgos)
+- [Anexo: demo en la nube y stack](#anexo)
 
 <div class="salto"></div>
 
@@ -95,30 +96,31 @@ Sobre el mismo flujo, la PoC usa los tres tipos de procesamiento de eventos vist
 ### 3.2 Utilidad para YOLO, con ejemplos {#utilidad}
 
 - **Un hecho, varios interesados.** `nivel_completado` le sirve al dashboard, a las alertas y, más adelante, a los reportes del colegio y a las métricas de negocio. Cada uno es un consumidor nuevo; el juego no cambia.
-- **Absorber la hora de clase.** El juego publica y recibe la respuesta enseguida (HTTP 202). Si el procesamiento se atrasa o se cae, los eventos esperan en el log y los alumnos siguen jugando.
+- **El juego no depende del mail.** El juego publica y recibe la respuesta enseguida (HTTP 202). Si el servidor de mail o el procesamiento se caen, los eventos esperan en el log, los alumnos siguen jugando y, al volver, cada consumidor se pone al día.
 - **Una métrica nueva sobre toda la historia.** Si el piloto pide «áreas que el alumno revisitó», se suma un consumidor que lee el log desde el principio y calcula la métrica para todos los alumnos, sin migrar datos ni tocar lo que ya funciona.
 - **Corregir un error de cálculo.** Si una regla del tiempo efectivo estaba mal, se corrige el consumidor y se reprocesa la historia. El modelo de lectura se reconstruye desde los hechos originales.
 
 ### 3.3 Comparativa de alternativas {#comparativa}
 
-| Criterio | **Kafka** | RabbitMQ | Batch nocturno (Airflow / Prefect) | Escritura directa en la base |
+La alternativa seria no es otro broker, sino no usar ninguno: que el juego escriba directo en Postgres.
+
+| Criterio | Escritura directa en Postgres | **Kafka** | RabbitMQ | Batch nocturno (Airflow / Prefect) |
 |---|---|---|---|---|
-| El dashboard se actualiza… | en segundos | en segundos | al día siguiente | en el momento |
-| Calcular una métrica nueva sobre la historia | Sí: el log se retiene y se relee | No en colas clásicas (el mensaje se borra al confirmarlo). Sí con RabbitMQ Streams | Sí, si se guardan los eventos crudos aparte | Solo si se guardan los eventos crudos |
-| Varios consumidores independientes | Grupos de consumidores | *Exchanges* con una cola por consumidor | Tareas dentro de un mismo DAG | Acoplados al código que escribe |
-| Si cae el procesamiento… | El juego sigue y se pone al día | El juego sigue y se pone al día | Se reintenta la corrida | El juego falla o pierde datos |
-| Orden por alumno | Por partición, con la clave | Por cola | No aplica (lotes) | Depende de las transacciones |
-| Complejidad operativa | Media-alta | Media | Media | Baja |
-| Encaje con el equipo (TypeScript) | Cliente oficial de Confluent para Node | Bueno | Flujos en Python | Total |
+| Alcanza para el volumen del piloto | Sí, de sobra | Sí, sobredimensionado | Sí | Sí |
+| Calcular una métrica nueva sobre la historia | Solo si además se guardan los eventos crudos | Sí: el log se retiene y se relee | No en colas clásicas (el mensaje se borra al confirmarlo). Sí con RabbitMQ Streams | Sí, si se guardan los eventos crudos aparte |
+| Si se cae el mail… | El pedido del juego lo tiene que manejar | El juego sigue y las alertas se ponen al día | El juego sigue y las alertas se ponen al día | Se reintenta la corrida |
+| Varios consumidores independientes | Acoplados al código que escribe | Grupos de consumidores | *Exchanges* con una cola por consumidor | Tareas dentro de un mismo DAG |
+| Alertas al padre o al profesor | Al jugar | Al jugar | Al jugar | Al día siguiente |
+| Complejidad operativa | Baja | Media-alta | Media | Media |
 
 **Pros y contras.**
 
-- **Kafka.** A favor: es el único que combina log durable con relectura, varios consumidores independientes y orden por clave, y escala con particiones. En contra: es más pesado de operar y está sobredimensionado para un piloto de dos colegios.
+- **Escritura directa en Postgres.** A favor: es lo más simple y barato, y a la escala del piloto la base alcanza. En contra: guarda el estado, no los hechos, así que una métrica nueva no se puede calcular hacia atrás sin guardar también un log de eventos; y el juego queda acoplado a cada métrica y al envío del mail.
+- **Kafka.** A favor: el log se retiene y se relee, varios consumidores leen lo mismo sin conocerse y el orden por alumno sale de la clave. En contra: es más pesado de operar y, por volumen, el piloto no lo necesita.
 - **RabbitMQ.** A favor: es más simple y muy bueno para repartir tareas. En contra: su modelo de colas borra el mensaje al consumirlo, y el replay, que es justo lo que pide la evolución de las métricas, no es su caso de uso natural.
-- **Batch con Airflow o Prefect.** A favor: es suficiente para reportes mensuales. En contra: la familia vería el día anterior y las alertas llegarían tarde. Sigue siendo una buena opción *complementaria* para los reportes de colegios.
-- **Escritura directa en la base.** A favor: es lo más barato. En contra: acopla el juego a cada métrica, y una caída de la base corta el juego.
+- **Batch con Airflow o Prefect.** A favor: es la herramienta adecuada para el reporte nocturno por colegio. En contra: las alertas llegarían al día siguiente. Es una opción *complementaria*, no una alternativa.
 
-**Decisión: Kafka.** En producción conviene usarlo como servicio gestionado, como Confluent Cloud o Azure Event Hubs con su endpoint compatible con Kafka, para no operar los brokers.
+**Decisión: Kafka.** No lo elegimos por volumen ni por tiempo real: para eso, Postgres alcanza. Lo elegimos por dos razones: poder recalcular sobre toda la historia métricas que todavía no existen, y que el juego siga aunque el mail se caiga. En producción conviene usarlo como servicio gestionado, como Confluent Cloud o Azure Event Hubs con su endpoint compatible con Kafka, para no operar los brokers.
 
 ### 3.4 Cómo las decisiones técnicas sirven al negocio {#negocio}
 
@@ -166,7 +168,7 @@ Los escenarios vienen del árbol de utilidad de YOLO. La evidencia sale de la Po
 |---|---|---|
 | **Confiabilidad.** Si se cae el procesamiento, no se pierde ninguna interacción. | Log durable y offsets por grupo | Con los consumidores detenidos, el juego respondió 202. El *lag* de cada grupo llegó a 6, y al reiniciarlos ambos procesaron todo. |
 | **Confiabilidad.** Un reenvío no se cuenta dos veces. | `eventId` y tabla de eventos procesados, en la misma transacción | El mismo evento enviado dos veces se contó una vez (prueba automática). |
-| **Rendimiento.** El avance se ve en menos de 2 s. | Consumo en línea | 1000 eventos enviados en paralelo: el proyector terminó 0,4 s después del último. |
+| **Usabilidad.** El adulto ve el avance sin recargar la página. | Consumo en línea y consulta del dashboard cada 5 s | Lo que juega Tomás aparece en el dashboard de Ana en el siguiente refresco. No hace falta más: el adulto no mira el dashboard segundo a segundo. |
 | **Disponibilidad.** Si fallan las alertas, la exploración sigue. | Grupos independientes | Al detener `alertas`, ni el juego ni el dashboard se enteraron. |
 | **Seguridad.** Cada adulto ve solo a sus alumnos. | El padre filtra por el vínculo y el profesor, por el curso. | Un profesor que pide a un alumno de otro curso recibe 404. |
 | **Modificabilidad.** Una métrica nueva o una corrección no modifican lo existente. | Releer el log desde el offset 0 | Se borra el modelo de lectura y el proyector reconstruye el dashboard desde el offset 0. |
@@ -196,6 +198,34 @@ Con tres personas desarrollando, son unas 6 o 7 semanas de calendario más conti
 
 ## 6. Riesgos y próximos pasos {#riesgos}
 
-- **Kafka es mucho para el piloto.** La alternativa de la clase 9 era empezar con un bus interno en la base de datos. Elegimos Kafka desde la PoC porque el replay y la absorción de ráfagas son justamente lo que pide la evolución de las métricas, y porque en una VM cuesta lo mismo. Si el piloto no crece, Kafka se puede reemplazar sin tocar los juegos, ya que los contratos de eventos no cambian.
-- **Operar Kafka con un equipo chico.** Se mitiga pasando a un servicio gestionado en la expansión.
+- **Kafka es mucho para el piloto.** La alternativa de la clase 9 era empezar con un bus interno en la base de datos. Elegimos Kafka desde la PoC porque el replay es justamente lo que pide la evolución de las métricas, porque desacopla el juego del mail y porque en una VM cuesta lo mismo. Si el piloto no crece, Kafka se puede reemplazar sin tocar los juegos, ya que los contratos de eventos no cambian.
+- **Operar Kafka con un equipo chico.** Se mitiga con un servicio gestionado en la expansión.
 - **Próximos pasos:** reportes por curso para colegios (un consumidor nuevo), *outbox* para los emails y contratos de eventos con Schema Registry.
+
+<div class="salto"></div>
+
+## Anexo: demo en la nube y stack {#anexo}
+
+**Demo desplegada.** La PoC corre en una VM de Azure (Brazil South), con el mismo `docker-compose.yml` más Caddy para HTTPS: <https://yolo-tpif-34cb00.brazilsouth.cloudapp.azure.com>. El código y las instrucciones están en <https://github.com/eugemigliaro/inge2-yolo>.
+
+**Credenciales de prueba.** Todas las cuentas usan la misma contraseña, que se envía junto con la entrega y no figura en el repositorio, porque es público. Si Clerk pide un código de verificación, es `424242`.
+
+| Para | Cuenta |
+|---|---|
+| Dashboard de un padre, con el historial de Juana y las alertas | `ana+clerk_test@example.com` |
+| Jugar en vivo como alumno | `tomas+clerk_test@example.com` |
+| Dashboard de un profesor (curso 5TOB) | `pablo+clerk_test@example.com` |
+
+Kafka UI y Mailpit no se exponen a Internet; se ven por túnel SSH.
+
+**Stack.**
+
+| Capa | Tecnología |
+|---|---|
+| App web, juegos e ingesta | Next.js 16, React 19 y TypeScript |
+| Identidad | Clerk (email y contraseña; el rol también se guarda en Postgres) |
+| Streaming de eventos | Apache Kafka 4.3 en modo KRaft; tópico `juego.eventos` con 3 particiones |
+| Consumidores (proyector y alertas) | Node 24 y TypeScript, con el cliente `@confluentinc/kafka-javascript` |
+| Modelo de lectura y estado de alertas | PostgreSQL 17 |
+| Email y observación | Mailpit (SMTP de prueba) y Kafka UI |
+| Despliegue | Docker Compose; en la nube, VM de Azure con Caddy |

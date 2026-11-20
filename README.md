@@ -12,13 +12,13 @@ YOLO es una plataforma donde estudiantes de los últimos años de la secundaria 
 
 La PoC está desplegada en una VM de Azure (región Brazil South): **<https://yolo-tpif-34cb00.brazilsouth.cloudapp.azure.com>**. El despliegue se explica en [Despliegue en Azure](#despliegue-en-azure).
 
-| Para | Cuenta | Contraseña |
-|---|---|---|
-| Ver el dashboard de un padre, con el historial de Juana y las alertas | `ana+clerk_test@example.com` | `yolo-demo-2026!` |
-| Jugar en vivo como alumno | `tomas+clerk_test@example.com` | `yolo-demo-2026!` |
-| Ver el dashboard de un profesor | `pablo+clerk_test@example.com` | `yolo-demo-2026!` |
+| Para | Cuenta |
+|---|---|
+| Ver el dashboard de un padre, con el historial de Juana y las alertas | `ana+clerk_test@example.com` |
+| Jugar en vivo como alumno | `tomas+clerk_test@example.com` |
+| Ver el dashboard de un profesor | `pablo+clerk_test@example.com` |
 
-Si Clerk pide un código de verificación, es `424242`. El resto de las cuentas está en [Usuarios de prueba](#usuarios-de-prueba).
+La contraseña no está en el repositorio, que es público: se envía con la entrega. Si Clerk pide un código de verificación, es `424242`. El resto de las cuentas está en [Usuarios de prueba](#usuarios-de-prueba).
 
 - Sin sesión se ve la portada pública. «Ya tengo cuenta» lleva al login y «Crear cuenta», al registro con elección de rol.
 - Para ver el flujo completo, conviene abrir a Ana en una ventana y a Tomás en otra privada: lo que juega Tomás aparece en el dashboard de Ana en segundos, con las alertas (pruebas 2 y 3 de [Qué probar](#qué-probar-y-qué-se-espera)).
@@ -71,10 +71,10 @@ Recorrido de un evento:
 
 Requisitos: Docker con Compose v2, y [Bun](https://bun.sh) para crear las cuentas de Clerk.
 
-La app no autentica sin las claves de Clerk. Copiá `.env.example` a `.env` y completá `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` y `CLERK_SECRET_KEY`. Después:
+La app no autentica sin las claves de Clerk. Copiá `.env.example` a `.env` y completá `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` y `DEMO_PASSWORD`, la contraseña de las cuentas de demo (mínimo 15 caracteres). Después:
 
 ```bash
-bun scripts/clerk.mjs          # crea las cinco cuentas de demo, con rol y contraseña yolo-demo-2026!
+bun scripts/clerk.mjs          # crea las cinco cuentas de demo, con rol y la contraseña DEMO_PASSWORD
 docker compose up -d --build
 ```
 
@@ -98,7 +98,7 @@ El historial de Juana se fecha respecto del día en que corre el `seed`, y la ac
 
 ## Usuarios de prueba
 
-Todos usan la contraseña `yolo-demo-2026!`. El rol ya está cargado: no pasan por el onboarding. Una cuenta nueva, en cambio, elige alumno, padre o profesor, y vincula por código. Los mails llevan `+clerk_test` porque Clerk rechaza el dominio `.test`. Si pide un código de verificación, es `424242`.
+Todos usan la misma contraseña, que se envía con la entrega y no está en el repositorio. Las cuentas viven en Clerk, compartidas entre local y la nube: correr `bun scripts/clerk.mjs` con otra `DEMO_PASSWORD` la cambia para todos. El rol ya está cargado: no pasan por el onboarding. Una cuenta nueva, en cambio, elige alumno, padre o profesor, y vincula por código. Los mails llevan `+clerk_test` porque Clerk rechaza el dominio `.test`. Si pide un código de verificación, es `424242`.
 
 | Email | Rol | Código | Para qué sirve |
 |---|---|---|---|
@@ -180,7 +180,7 @@ scripts/e2e.sh                              # de punta a punta contra el stack l
 scripts/carga.sh 1000                       # 1000 eventos en paralelo; mide el atraso del proyector
 ```
 
-Los tests de `web` chequean que en cada nivel de El caso el diagnóstico escondido se pueda deducir, que cada situación de El tablero tenga su estante y que en La bajada ninguna respuesta choque con otra y cada nivel se pueda completar sin respuestas raras. `e2e.sh` y `carga.sh` necesitan `CLERK_SECRET_KEY` y agregan datos a Tomás. Después, conviene volver al estado inicial (ver arriba).
+Los tests de `web` chequean que en cada nivel de El caso el diagnóstico escondido se pueda deducir, que cada situación de El tablero tenga su estante y que en La bajada ninguna respuesta choque con otra y cada nivel se pueda completar sin respuestas raras. `e2e.sh` y `carga.sh` necesitan `CLERK_SECRET_KEY` y agregan datos a Tomás. `e2e.sh` no depende de lo que ya se haya jugado: prueba la frustración en el primer nivel de Sistemas que Tomás no completó y, si completó los 9, libera el último. Después, conviene volver al estado inicial (ver arriba).
 
 ## Atributos de calidad que muestra la PoC
 
@@ -190,7 +190,7 @@ Los escenarios vienen del árbol de utilidad de YOLO (clase 9, Actividad 2).
 |---|---|---|
 | C1: no perder interacciones si se cae un servicio | Kafka guarda el log y los consumidores retoman desde su offset. El proyector aplica cada evento una sola vez, en una transacción. | Prueba 4 |
 | C2: un reenvío no duplica tiempo | `eventId` del navegador, guardado en `eventos_salida`, más `eventos_procesados` en el proyector. | `e2e.sh` |
-| R1: el avance se ve en menos de 2 s | El proyector consume en línea. | `carga.sh` |
+| R1: el nivel siguiente se desbloquea en menos de 2 s | El servidor lo desbloquea al validar la jugada (`partida`), sin esperar al proyector. El dashboard del adulto se actualiza solo cada 5 s. | Prueba 2 |
 | S1: cada adulto ve solo a sus alumnos | El padre filtra por `vinculo_padre`. El profesor, por el curso. Si no hay vínculo, el dashboard responde 404. | Prueba 5 |
 | S2: ningún dato personal circula por el canal | Los eventos llevan solo el id seudónimo. Nombre y email se buscan recién al mandar el email. El texto del intento no se publica. | Kafka UI, mensajes |
 | D2: si fallan las alertas, la exploración sigue | Cada consumidor es un grupo independiente: el productor no los conoce. | Prueba 4 |
@@ -209,7 +209,7 @@ az login                 # cuenta de Azure for Students
 deploy/azure.sh          # crea el grupo de recursos y la VM, copia el proyecto y lo levanta
 ```
 
-El script es idempotente: si la VM ya existe, solo copia los cambios y vuelve a levantar. **Antes de correrlo, hacé `git pull`:** copia el directorio local con `rsync --delete`, así que una copia vieja pisa lo que haya en la VM. Se puede cambiar la región con `LOCATION=brazilsouth deploy/azure.sh`; Azure for Students permite solo algunas regiones. Imprime la URL pública (`https://<nombre>.<región>.cloudapp.azure.com`); la del grupo es <https://yolo-tpif-34cb00.brazilsouth.cloudapp.azure.com>. Las credenciales de acceso son las de [usuarios de prueba](#usuarios-de-prueba). En la VM también hay que haber corrido `bun scripts/clerk.mjs` una vez, desde una máquina con `CLERK_SECRET_KEY`, porque Clerk no vive en el compose.
+El script es idempotente: si la VM ya existe, solo copia los cambios y vuelve a levantar. Copia el directorio local con `rsync --delete`, así que una copia vieja pisa lo que haya en la VM: por eso el script se niega a desplegar si hay cambios sin commitear o si tu copia está atrás del remoto (`FORZAR=1` saltea ese control). Se puede cambiar la región con `LOCATION=brazilsouth deploy/azure.sh`; Azure for Students permite solo algunas regiones. Imprime la URL pública (`https://<nombre>.<región>.cloudapp.azure.com`); la del grupo es <https://yolo-tpif-34cb00.brazilsouth.cloudapp.azure.com>. Las credenciales de acceso son las de [usuarios de prueba](#usuarios-de-prueba). En la VM también hay que haber corrido `bun scripts/clerk.mjs` una vez, desde una máquina con `CLERK_SECRET_KEY`, porque Clerk no vive en el compose.
 
 Kafka UI y Mailpit no se exponen a Internet. Para verlos en la demo:
 
