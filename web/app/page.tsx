@@ -20,28 +20,25 @@ export default async function Inicio() {
   return (
     <div className="portada">
       <section className="portada-hero">
-        <div>
-          <p className="portada-etiqueta">Orientación vocacional, jugando</p>
-          <h1>Probá las carreras <em>antes de elegir una</em>.</h1>
-          <p className="portada-bajada">
-            Tres juegos, uno por carrera. Vos jugás a tu ritmo; tu familia y tus profes ven qué exploraste,
-            cuánto tiempo le dedicaste y hasta dónde llegaste, en tiempo real.
-          </p>
-          <div className="acciones">
-            <Link className="boton boton-grande" href="/sign-up">Empezar a jugar</Link>
-            <Link className="boton secundario boton-grande" href="/sign-in">Ya tengo cuenta</Link>
-          </div>
+        <h1>Probá las carreras.</h1>
+        <p className="subtitulo">Antes de elegir una.</p>
+        <p className="portada-bajada">
+          <span className="marca-yolo">YOLO</span> convierte la orientación vocacional en tres juegos, uno por carrera.
+          Tu familia y tus profes ven qué exploraste, cuánto tiempo le dedicaste y hasta dónde llegaste.
+        </p>
+        <div className="acciones">
+          <Link className="boton secundario" href="/sign-up">Empezar a jugar</Link>
+          <Link className="boton secundario" href="/sign-in">Ya tengo cuenta</Link>
         </div>
-        <Vista />
       </section>
 
       <section className="portada-seccion" aria-labelledby="carreras">
         <h2 id="carreras">Tres carreras, tres juegos</h2>
         <p className="tenue">Ninguno depende de reflejos. Completar un nivel abre el siguiente de esa carrera.</p>
-        <div className="grilla">
+        <div className="carreras">
           {AREAS.map((a) => (
-            <article key={a.slug} className={`tarjeta carrera tono-${a.slug}`}>
-              <span className="icono-area"><IconoArea area={a.slug} /></span>
+            <article key={a.slug} className={`carrera tono-${a.slug}`}>
+              <span className="icono-area"><IconoArea area={a.slug} tamano={48} /></span>
               <h3>{a.nombre}</h3>
               <p className="juego-nombre">{a.juego}</p>
               <p>{a.descripcion}</p>
@@ -49,6 +46,7 @@ export default async function Inicio() {
             </article>
           ))}
         </div>
+        <p className="y-mas">Y más carreras en camino…</p>
       </section>
 
       <section className="portada-seccion" aria-labelledby="como">
@@ -58,14 +56,22 @@ export default async function Inicio() {
           <li><strong>Jugás</strong>Cada jugada se registra al instante. Podés dejar un nivel y volver cuando quieras.</li>
           <li><strong>Tu familia lo ve</strong>Tiempo por carrera, niveles, aciertos y alertas por mail cuando aparece un interés o una traba.</li>
         </ol>
+        <Vista />
       </section>
 
-      <section className="no-test">
-        <p>
-          <strong>No es un test.</strong> YOLO no te dice qué estudiar: muestra cómo explorás, para que la charla
-          con tu familia parta de lo que hiciste y no de una foto de un día.
-        </p>
-        <Link className="boton boton-grande" href="/sign-up">Crear cuenta</Link>
+      <section className="cierre" aria-labelledby="cierre">
+        <h2 id="cierre">Tu recorrido empieza acá.</h2>
+        <div className="cierre-tarjeta">
+          <h3>Sumate a <span className="marca-yolo">YOLO</span></h3>
+          <p>
+            <strong>No es un test.</strong> YOLO no te dice qué estudiar: muestra cómo explorás, para que la charla
+            con tu familia parta de lo que hiciste y no de una foto de un día.
+          </p>
+          <div className="acciones">
+            <Link className="boton secundario" href="/sign-in">Ya tengo cuenta</Link>
+            <Link className="boton" href="/sign-up">Crear cuenta</Link>
+          </div>
+        </div>
       </section>
 
       <footer className="pie">YOLO · Trabajo práctico integrador de Ingeniería de Software II · ITBA · 2026</footer>
@@ -84,7 +90,7 @@ function Vista() {
     <figure className="vista" aria-label="Ejemplo del panel que ve la familia">
       <div className="vista-tope">
         <span>Recorrido de Juana</span>
-        <span className="en-vivo">En vivo</span>
+        <span className="tenue">Se actualiza solo</span>
       </div>
       <p className="tenue">Tiempo efectivo por carrera</p>
       {barras.map((b) => (
