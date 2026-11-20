@@ -35,7 +35,7 @@ HOST=$(az vm show -d -g "$RG" -n "$VM" --query fqdns -o tsv)
 until ssh -o StrictHostKeyChecking=accept-new "azureuser@$HOST" docker version >/dev/null 2>&1; do
   echo "Esperando a que la VM termine de instalar Docker..."; sleep 15
 done
-rsync -az --delete --exclude node_modules --exclude .next --exclude .git --exclude .env --exclude credenciales-demo.md ./"azureuser@$HOST:yolo/"
+rsync -az --delete --exclude node_modules --exclude .next --exclude .git --exclude .env --exclude credenciales-demo.md ./ "azureuser@$HOST:yolo/"
 # Las claves de Clerk salen del .env local y no se imprimen. La de Postgres se genera una sola vez en la VM.
 if [ -f .env ]; then
   grep -E '^(NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY|CLERK_SECRET_KEY)=' .env > /tmp/yolo-clerk.env || true
