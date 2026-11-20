@@ -8,6 +8,17 @@ VM=${VM:-yolo-vm}
 SIZE=${SIZE:-Standard_B2s}     # 2 vCPU, 4 GB de RAM
 DNS=${DNS:-yolo-tpif-$(az account show --query id -o tsv | cut -c1-6)}
 cd "$(dirname "$0")/.."
+COMPOSE="docker compose -f docker-compose.yml -f deploy/docker-compose.cloud.yml"
+
+# deploy/azure.sh reset: vuelve la demo de la VM al estado inicial (Juana con su historial, Tomás vacío,
+# Mailpit sin mails). Borra Kafka, Postgres y Mailpit, pero no el certificado de Caddy: pedirlo de nuevo
+# muchas veces choca con los límites de Let's Encrypt. No copia archivos, así que no hace falta git pull.
+if [ "${1:-}" = reset ]; then
+  HOST=$(az vm show -d -g "$RG" -n "$VM" --query fqdns -o tsv)
+  ssh "azureuser@$HOST" "cd yolo && $COMPOSE down && docker volume rm yolo_kafka yolo_postgres yolo_mailpit && $COMPOSE up -d"
+  echo "Demo reseteada: https://$HOST"
+  exit 0
+fi
 
 # rsync --delete copia el directorio tal cual: una copia vieja o con cambios a medio hacer pisa la VM.
 # FORZAR=1 saltea estos controles.
@@ -44,5 +55,5 @@ if [ -f .env ]; then
 fi
 ssh "azureuser@$HOST" "cd yolo && { [ -f .env ] || printf 'POSTGRES_PASSWORD=%s\nDOMINIO=%s\n' \$(openssl rand -hex 16) $HOST > .env; } \
   && if [ -f clerk.env ]; then grep -v -E '^(NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY|CLERK_SECRET_KEY)=' .env > .env.new && mv .env.new .env && cat clerk.env >> .env && rm clerk.env; fi \
-  && docker compose -f docker-compose.yml -f deploy/docker-compose.cloud.yml up -d --build"
+  && $COMPOSE up -d --build"
 echo "Listo: https://$HOST"

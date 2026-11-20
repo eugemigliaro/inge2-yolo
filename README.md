@@ -217,6 +217,12 @@ Kafka UI y Mailpit no se exponen a Internet. Para verlos en la demo:
 ssh -L 8080:localhost:8080 -L 8025:localhost:8025 azureuser@<host>
 ```
 
+Para volver la demo de la VM al estado inicial (por ejemplo, la mañana de la defensa):
+
+```bash
+deploy/azure.sh reset    # borra Kafka, Postgres y Mailpit en la VM y vuelve a sembrar a Juana; el certificado de HTTPS se conserva
+```
+
 Para cuidar el crédito: `az vm deallocate -g yolo-tpif -n yolo-vm` (se vuelve a prender con `az vm start`). Para borrar todo: `az group delete -n yolo-tpif`.
 
 ## Estructura
