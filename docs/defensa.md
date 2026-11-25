@@ -50,7 +50,7 @@ En las preguntas hablan los cuatro, cada uno por su tema (ver [Preguntas](#pregu
 
 ## Exposición (5 minutos)
 
-El texto tiene unas 660 palabras: dicho a ritmo normal son cerca de 4:30. Los 30 segundos que sobran son el margen para los traspasos y los nervios. Si en el ensayo pasa de 4:40, se recorta la parte 2, no se habla más rápido.
+El texto tiene unas 640 palabras: dicho a ritmo normal son cerca de 4:20. Los 40 segundos que sobran son el margen para los traspasos y los nervios. Si en el ensayo pasa de 4:40, se recorta la parte 2, no se habla más rápido.
 
 | Tiempo | Parte | En pantalla |
 |---|---|---|
@@ -69,11 +69,13 @@ El texto tiene unas 660 palabras: dicho a ritmo normal son cerca de 4:30. Los 30
 
 ### Parte 2. Funcionalidades y decisión (Franco, 1:15)
 
-> El producto tiene seis funcionalidades principales. Cuatro están en la prueba de concepto: los juegos, el registro del recorrido, el dashboard para padres y profesores y las alertas. Las otras dos, los reportes por curso para el colegio y la gestión de contenidos y suscripciones, todavía no están hechas.
+> El producto tiene seis funcionalidades principales. Cuatro están en la prueba de concepto: los juegos, el registro del recorrido, el dashboard para padres y profesores y las alertas. Las otras dos, los reportes por curso y la gestión de contenidos y suscripciones, todavía no están hechas.
 >
 > Para la prueba de concepto elegimos la historia central: como padre o profesor, quiero ver cuánto tiempo le dedica el alumno a cada área, hasta dónde llegó, y enterarme cuando descubre un interés o se frustra.
 >
-> Cada jugada es un evento, y ahí aparece la decisión. La alternativa seria a Kafka no era otro broker: era no usar ninguno y escribir directo en Postgres, que para un piloto alcanza y sobra. Entonces no elegimos Kafka por volumen ni por tiempo real. Lo elegimos por dos razones de negocio. La primera: las métricas van a cambiar después del piloto, y como Kafka conserva el log, una métrica que inventemos en el mes seis se puede calcular sobre los meses uno a cinco. La segunda: si se cae el mail o el procesamiento, el alumno sigue jugando. RabbitMQ borra el mensaje al consumirlo, y un proceso nocturno con Airflow avisaría recién al día siguiente.
+> Cada jugada es un evento, y ahí aparece la decisión. La alternativa seria a Kafka no era otro broker: era no usar ninguno y escribir directo en Postgres, que para un piloto alcanza y sobra. Entonces, ¿por qué Kafka? Porque Kafka guarda todo lo que pasó, y no solo el resultado. Hoy medimos tiempo y niveles. Mañana vamos a querer medir otra cosa, y con Kafka la calculamos sobre todo lo que los alumnos ya jugaron. Y además el juego queda separado del resto: si se cae el mail o el dashboard, el alumno sigue jugando.
+
+La comparación con RabbitMQ y Airflow no se dice: queda en la diapositiva de la decisión y en las preguntas.
 
 ### Parte 3. Arquitectura y stack (Eugenio, 1:25)
 
