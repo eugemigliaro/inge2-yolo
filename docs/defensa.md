@@ -110,6 +110,8 @@ El enunciado no pide entregarlas, pero la arquitectura hay que mostrarla con un 
 
 De respaldo para las preguntas, sin mostrarlas en la exposición: la tabla PERT, la comparativa completa, el diagrama de despliegue, el de secuencia y la tabla de atributos de calidad. Todas salen del white paper.
 
+Hay una versión animada de las mismas diapositivas en `docs/presentacion/`, hecha con Manim. Cada tecla avanza un paso de la animación, y la nota de cada paso es la frase del guion que lo acompaña. Se renderiza con `./presentacion.sh render` y se presenta con `./presentacion.sh presentar`. Las exportaciones a HTML y `.pptx` salen de `./presentacion.sh exportar`. `defensa.pptx` queda como plan B.
+
 ## Demo (5 minutos)
 
 Objetivo: 4:30. Son cuatro actos, y cada uno prueba una afirmación de la exposición.
